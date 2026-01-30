@@ -1,0 +1,59 @@
+﻿<Window x:Class="RobotProgrammer.View.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Robot Programmer" Height="450" Width="800">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Панель кнопок -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Content="Добавить движение"
+                    Width="150"
+                    Margin="0,0,10,0"
+                    Command="{Binding AddMoveCommand}" />
+
+            <Button Content="Добавить паузу"
+                    Width="150"
+                    Margin="0,0,10,0"
+                    Command="{Binding AddWaitCommand}" />
+            <Button Content="Компилировать" Width="150" Margin="0,0,10,0"
+            Command="{Binding CompileCommand}" />
+            <Button Content="Загрузить" Width="150"
+            Command="{Binding UploadCommand}" />
+        </StackPanel>
+
+        <!-- Таблица действий -->
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding Actions}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Тип"
+                                    Binding="{Binding ActionType}"
+                                    IsReadOnly="True"/>
+
+                <DataGridTextColumn Header="Speed L"
+                                    Binding="{Binding SpeedLeft}" />
+
+                <DataGridTextColumn Header="Speed R"
+                                    Binding="{Binding SpeedRight}" />
+
+                <DataGridTextColumn Header="Время (мс)"
+                                    Binding="{Binding DurationMs}" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBox Grid.Row="2" Height="150" Margin="0,10,0,0" 
+         Text="{Binding LogString, Mode=OneWay}" 
+         IsReadOnly="True" 
+         TextWrapping="Wrap" 
+         VerticalScrollBarVisibility="Auto"/>
+
+    </Grid>
+</Window>
