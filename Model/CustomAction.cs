@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace RobotProgrammer.Model
 {
@@ -10,7 +11,7 @@ namespace RobotProgrammer.Model
         public string TemplateCode { get; set; } = "";
 
         // Параметры, которые пользователь может задавать
-        public Dictionary<string, int> Parameters { get; set; } = new();
+        public ObservableCollection<ParameterItem> Parameters { get; set; } = new();
 
         public override string DisplayType => TemplateName;
 
@@ -18,14 +19,10 @@ namespace RobotProgrammer.Model
         public override string GenerateCode()
         {
             string code = TemplateCode;
-
-            foreach (var kv in Parameters)
-            {
-                // заменяем {ParameterName} на значение
-                code = code.Replace("{" + kv.Key + "}", kv.Value.ToString());
-            }
-
+            foreach (var param in Parameters)
+                code = code.Replace($"{{{param.Name}}}", param.IntValue.ToString());
             return code;
         }
+
     }
 }

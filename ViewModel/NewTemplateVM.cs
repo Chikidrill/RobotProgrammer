@@ -1,8 +1,6 @@
 ﻿using RobotProgrammer.Model;
-using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows.Input;
 using ViewModel;
 
@@ -10,11 +8,12 @@ namespace RobotProgrammer.ViewModel
 {
     public class NewTemplateVM : INotifyPropertyChanged
     {
+        private ParameterItem _selectedParameter;
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged(string name)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        public event EventHandler<bool> RequestClose; // для закрытия окна
+        public event EventHandler<bool> RequestClose;
 
         public CustomAction Result { get; private set; } = new();
 
@@ -34,36 +33,38 @@ namespace RobotProgrammer.ViewModel
 
         public ObservableCollection<ParameterItem> Parameters { get; } = new();
 
-        public ICommand AddParameterCommand { get; }
-        public ICommand RemoveParameterCommand { get; }
         public ICommand OkCommand { get; }
         public ICommand CancelCommand { get; }
+        public ICommand AddParameterCommand { get; }
+        public ICommand RemoveParameterCommand { get; }
 
         public NewTemplateVM()
         {
-            AddParameterCommand = new RelayCommand(AddParameter);
-            RemoveParameterCommand = new RelayCommand(RemoveParameter);
             OkCommand = new RelayCommand(Ok);
             CancelCommand = new RelayCommand(Cancel);
+            AddParameterCommand = new RelayCommand(() =>
+            {
+                Parameters.Add(new ParameterItem { Name = "NewParam", Value = "0" });
+            });
+            RemoveParameterCommand = new RelayCommand(() =>
+            {
+                if (SelectedParameter != null)
+                    Parameters.Remove(SelectedParameter);
+            });
         }
-
-        private void AddParameter()
+       
+        public ParameterItem SelectedParameter
         {
-            Parameters.Add(new ParameterItem { Name = "Param" + (Parameters.Count + 1), Value = 0 });
-        }
-
-        private void RemoveParameter()
-        {
-            if (Parameters.Any())
-                Parameters.RemoveAt(Parameters.Count - 1);
+            get => _selectedParameter;
+            set { _selectedParameter = value; OnPropertyChanged(nameof(SelectedParameter)); }
         }
 
         private void Ok()
         {
             Result.TemplateName = TemplateName;
             Result.TemplateCode = TemplateCode;
-            Result.Parameters = Parameters.ToDictionary(p => p.Name, p => p.Value);
-
+            Result.Parameters = new ObservableCollection<ParameterItem>(Parameters);
+            TemplateService.SaveTemplate(Result);
             RequestClose?.Invoke(this, true);
         }
 

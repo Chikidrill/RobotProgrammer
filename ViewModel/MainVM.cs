@@ -22,6 +22,8 @@ public class MainVM: INotifyPropertyChanged
     public ICommand CompileCommand { get; }
     public ICommand UploadCommand { get; }
     public ICommand NewTemplateCommand { get; }
+    public ICommand LoadTemplateCommand { get; }
+
 
     private readonly ArduinoCodeGenerator _generator = new();
     private readonly ArduinoCliService _cli = new();
@@ -50,6 +52,8 @@ public class MainVM: INotifyPropertyChanged
         CompileCommand = new RelayCommand(Compile);
         UploadCommand = new RelayCommand(Upload);
         NewTemplateCommand = new RelayCommand(OpenNewTemplateWindow);
+        LoadTemplateCommand = new RelayCommand(OpenTemplatePicker);
+
     }
     private void SaveAsProject()
     {
@@ -150,5 +154,35 @@ public class MainVM: INotifyPropertyChanged
             AddLog($"Создан новый шаблон: {templateVM.Result.TemplateName}");
         }
     }
+    private void OpenTemplatePicker()
+    {
+        try
+        {
+            // Получаем список всех файлов шаблонов через сервис
+            var templates = TemplateService.GetAllTemplateFiles();
+            if (templates.Count == 0)
+            {
+                AddLog("Шаблонов нет.");
+                return;
+            }
+
+            // Используем наш файл-диалог, чтобы выбрать один из шаблонов
+            string selectedFile = _fileDialog.OpenFile("JSON шаблоны (*.json)|*.json");
+            if (selectedFile == null)
+                return;
+
+            // Загружаем шаблон по имени файла
+            var template = TemplateService.LoadTemplate(Path.GetFileName(selectedFile));
+            Actions.Add(template);
+            AddLog($"Загружен шаблон: {template.TemplateName}");
+        }
+        catch (Exception ex)
+        {
+            AddLog("[Ошибка загрузки шаблона] " + ex.Message);
+        }
+    }
+
+
+
 }
 

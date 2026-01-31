@@ -16,14 +16,14 @@
 
         <!-- Панель кнопок -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <Button Content="Добавить движение" Width="100" Margin="0,0,10,0" Command="{Binding AddMoveCommand}" />
-            <Button Content="Добавить паузу" Width="100" Margin="0,0,10,0" Command="{Binding AddWaitCommand}" />
-            <Button Content="Компилировать" Width="100" Margin="0,0,10,0" Command="{Binding CompileCommand}" />
-            <Button Content="Загрузить" Width="100" Margin="0,0,10,0" Command="{Binding UploadCommand}" />
-            <Button Content="Сохранить как..." Width="100" Margin="0,0,10,0" Command="{Binding SaveAsProjectCommand}" />
-            <Button Content="Открыть проект..." Width="100" Margin="0,0,10,0" Command="{Binding OpenProjectCommand}" />
-            <Button Content="Новый шаблон" Width="120" Margin="0,0,10,0"
-        Command="{Binding NewTemplateCommand}" />
+            <Button Content="Добавить движение" Width="50" Margin="0,0,10,0" Command="{Binding AddMoveCommand}" />
+            <Button Content="Добавить паузу" Width="50" Margin="0,0,10,0" Command="{Binding AddWaitCommand}" />
+            <Button Content="Компилировать" Width="50" Margin="0,0,10,0" Command="{Binding CompileCommand}" />
+            <Button Content="Загрузить" Width="50" Margin="0,0,10,0" Command="{Binding UploadCommand}" />
+            <Button Content="Сохранить как..." Width="50" Margin="0,0,10,0" Command="{Binding SaveAsProjectCommand}" />
+            <Button Content="Открыть проект..." Width="50" Margin="0,0,10,0" Command="{Binding OpenProjectCommand}" />
+            <Button Content="Новый шаблон" Width="50" Margin="0,0,10,0" Command="{Binding NewTemplateCommand}" />
+            <Button Content="Загрузить шаблон" Width="50" Margin="0,0,10,0" Command="{Binding LoadTemplateCommand}" />
 
         </StackPanel>
         
@@ -75,6 +75,30 @@
                                 <TextBox Text="{Binding DurationMs}"/>
                             </StackPanel>
                         </DataTemplate>
+
+                        <!-- Шаблон для CustomAction -->
+                        <DataTemplate DataType="{x:Type local:CustomAction}">
+                            <StackPanel>
+                                <TextBlock Text="Пользовательский шаблон"/>
+                                <TextBlock Text="Имя:"/>
+                                <TextBox Text="{Binding TemplateName}" Margin="0,0,0,5"/>
+                                <TextBlock Text="Код:"/>
+                                <TextBox Text="{Binding TemplateCode}" AcceptsReturn="True" Height="100" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="Параметры:"/>
+                                <ItemsControl ItemsSource="{Binding Parameters}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}" Width="80"/>
+                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+
                     </ContentControl.Resources>
                 </ContentControl>
             </Border>

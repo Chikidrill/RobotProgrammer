@@ -1,26 +1,27 @@
 ﻿using System.ComponentModel;
 
-namespace RobotProgrammer.Model
+public class ParameterItem : INotifyPropertyChanged
 {
-    public class ParameterItem : INotifyPropertyChanged
+    public string Name { get; set; } = "";
+
+    private string _value = "0"; // строка для TextBox
+    public string Value
     {
-        private string _name;
-        private int _value;
-
-        public string Name
+        get => _value;
+        set
         {
-            get => _name;
-            set { _name = value; OnPropertyChanged(nameof(Name)); }
+            if (_value != value)
+            {
+                _value = value;
+                OnPropertyChanged(nameof(Value));
+            }
         }
-
-        public int Value
-        {
-            get => _value;
-            set { _value = value; OnPropertyChanged(nameof(Value)); }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged(string prop)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
     }
+
+    // Получить int для кода
+    public int IntValue => int.TryParse(_value, out var v) ? v : 0;
+
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void OnPropertyChanged(string name)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

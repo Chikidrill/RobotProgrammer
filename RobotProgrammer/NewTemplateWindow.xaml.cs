@@ -23,7 +23,7 @@ namespace RobotProgrammer.View
         }
 
         // Новый метод для ShowDialog с VM
-        public bool? ShowDialog(NewTemplateViewModel vm)
+        public bool? ShowDialog(NewTemplateVM vm)
         {
             DataContext = vm;
             return this.ShowDialog();

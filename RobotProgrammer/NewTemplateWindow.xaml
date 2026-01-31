@@ -23,7 +23,7 @@
 
             <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
                 <Button Content="Добавить параметр" Command="{Binding AddParameterCommand}" Width="120" Margin="0,0,5,0"/>
-                <Button Content="Удалить параметр" Command="{Binding RemoveParameterCommand}" Width="120"/>
+                <Button Content="Удалить параметр" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" Width="120"/>
             </StackPanel>
 
             <DataGrid ItemsSource="{Binding Parameters}" AutoGenerateColumns="False" Height="100">
