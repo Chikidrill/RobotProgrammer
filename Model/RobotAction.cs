@@ -1,10 +1,8 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.ObjectModel;
+using System.Text.Json.Serialization;
 
 namespace RobotProgrammer.Model;
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-[JsonDerivedType(typeof(MoveAction), "Move")]
-[JsonDerivedType(typeof(WaitAction), "Wait")]
 public abstract class RobotAction
 {
     // Общие параметры (оставляем)
@@ -12,7 +10,6 @@ public abstract class RobotAction
     public int SpeedRight { get; set; }
     public int DurationMs { get; set; }
 
-    [JsonIgnore]
-    public string DisplayType => GetType().Name.Replace("Action", "");
+    public virtual string DisplayType => GetType().Name.Replace("Action", "");
     public abstract string GenerateCode();
 }

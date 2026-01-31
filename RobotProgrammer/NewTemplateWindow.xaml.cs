@@ -1,44 +1,32 @@
-﻿using RobotProgrammer.Model;
-using System.Collections.Generic;
-using System.Windows;
+﻿using System.Windows;
+using RobotProgrammer.ViewModel;
 
 namespace RobotProgrammer.View
 {
     public partial class NewTemplateWindow : Window
     {
-        public CustomAction Result { get; private set; }
-
         public NewTemplateWindow()
         {
             InitializeComponent();
-            ParamsGrid.ItemsSource = new List<KeyValuePair<string, int>>();
-        }
 
-        private void Save_Click(object sender, RoutedEventArgs e)
-        {
-            var template = new CustomAction
+            Loaded += (s, e) =>
             {
-                TemplateName = TemplateNameBox.Text,
-                TemplateCode = CodeBox.Text,
-                Parameters = new Dictionary<string, int>()
-            };
-
-            foreach (var item in ParamsGrid.Items)
-            {
-                if (item is KeyValuePair<string, int> kv)
+                if (DataContext is NewTemplateVM vm)  // ← здесь был старый класс
                 {
-                    template.Parameters[kv.Key] = kv.Value;
+                    vm.RequestClose += (sender, dialogResult) =>
+                    {
+                        DialogResult = dialogResult;
+                        Close();
+                    };
                 }
-            }
-
-            TemplateService.SaveTemplate(template);
-            Result = template;
-            DialogResult = true;
+            };
         }
 
-        private void Cancel_Click(object sender, RoutedEventArgs e)
+        // Новый метод для ShowDialog с VM
+        public bool? ShowDialog(NewTemplateVM vm)
         {
-            DialogResult = false;
+            DataContext = vm;
+            return this.ShowDialog();
         }
     }
 }

@@ -1,20 +1,20 @@
 [
   {
-    "$type": "Move",
     "SpeedLeft": 100,
     "SpeedRight": 100,
-    "DurationMs": 1000
+    "DurationMs": 1000,
+    "DisplayType": "Move"
   },
   {
-    "$type": "Move",
     "SpeedLeft": 100,
     "SpeedRight": 100,
-    "DurationMs": 1000
+    "DurationMs": 1000,
+    "DisplayType": "Move"
   },
   {
-    "$type": "Move",
-    "SpeedLeft": 100,
+    "SpeedLeft": 50,
     "SpeedRight": 100,
-    "DurationMs": 1000
+    "DurationMs": 0,
+    "DisplayType": "Move2"
   }
 ]

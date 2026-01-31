@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace RobotProgrammer.Model
 {
@@ -6,24 +7,22 @@ namespace RobotProgrammer.Model
     {
         public string TemplateName { get; set; } = "Новый шаблон";
 
-        // Параметры действия: ключ = имя, значение = текущее значение
-        public Dictionary<string, int> Parameters { get; set; } = new();
-
-        // Тело кода с плейсхолдерами {ParamName}
+        // Код шаблона с {Placeholders} для параметров
         public string TemplateCode { get; set; } = "";
 
-        // Для отображения типа в таблице
+        // Параметры, которые пользователь может задавать
+        public ObservableCollection<ParameterItem> Parameters { get; set; } = new();
+
         public override string DisplayType => TemplateName;
 
-        // Метод генерации кода для Arduino
-        public string GenerateCode()
+        // Генерация кода для Arduino
+        public override string GenerateCode()
         {
             string code = TemplateCode;
-            foreach (var kv in Parameters)
-            {
-                code = code.Replace("{" + kv.Key + "}", kv.Value.ToString());
-            }
+            foreach (var param in Parameters)
+                code = code.Replace($"{{{param.Name}}}", param.IntValue.ToString());
             return code;
         }
+
     }
 }

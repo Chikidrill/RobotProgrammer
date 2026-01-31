@@ -10,6 +10,7 @@ public class MainVM: INotifyPropertyChanged
 {
     private readonly IFileDialogService _fileDialog;
     private RobotAction _selectedAction;
+    private IWindowService _windowService;
     public ObservableCollection<RobotAction> Actions { get; } = new();
     public event PropertyChangedEventHandler PropertyChanged;
     private void OnPropertyChanged(string propertyName)
@@ -20,6 +21,10 @@ public class MainVM: INotifyPropertyChanged
     public ICommand OpenProjectCommand { get; }
     public ICommand CompileCommand { get; }
     public ICommand UploadCommand { get; }
+    public ICommand NewTemplateCommand { get; }
+    public ICommand LoadTemplateCommand { get; }
+    public ICommand EditTemplateCommand { get; }
+
 
     private readonly ArduinoCodeGenerator _generator = new();
     private readonly ArduinoCliService _cli = new();
@@ -37,15 +42,20 @@ public class MainVM: INotifyPropertyChanged
 
     private string projectPath = "robot"; // путь к скетчу
 
-    public MainVM(IFileDialogService fileDialog)
+    public MainVM(IFileDialogService fileDialog, IWindowService windowService)
     {
         _fileDialog = fileDialog;
+        _windowService = windowService;
         AddMoveCommand = new RelayCommand(AddMove);
         AddWaitCommand = new RelayCommand(AddWait);
         SaveAsProjectCommand = new RelayCommand(SaveAsProject);
         OpenProjectCommand = new RelayCommand(OpenProject);
         CompileCommand = new RelayCommand(Compile);
         UploadCommand = new RelayCommand(Upload);
+        NewTemplateCommand = new RelayCommand(OpenNewTemplateWindow);
+        LoadTemplateCommand = new RelayCommand(OpenTemplatePicker);
+        EditTemplateCommand = new RelayCommand(EditTemplate);
+
     }
     private void SaveAsProject()
     {
@@ -82,7 +92,6 @@ public class MainVM: INotifyPropertyChanged
             AddLog("[Ошибка загрузки] " + ex.Message);
         }
     }
-
 
     private void AddMove()
     {
@@ -138,5 +147,79 @@ public class MainVM: INotifyPropertyChanged
             OnPropertyChanged(nameof(SelectedAction));
         }
     }
+    private void OpenNewTemplateWindow()
+    {
+        var templateVM = new NewTemplateVM();
+        if (_windowService.ShowDialog(templateVM) == true)
+        {
+            Actions.Add(templateVM.Result);
+            AddLog($"Создан новый шаблон: {templateVM.Result.TemplateName}");
+        }
+    }
+    private void OpenTemplatePicker()
+    {
+        try
+        {
+            // Получаем список всех файлов шаблонов через сервис
+            var templates = TemplateService.GetAllTemplateFiles();
+            if (templates.Count == 0)
+            {
+                AddLog("Шаблонов нет.");
+                return;
+            }
+
+            // Используем наш файл-диалог, чтобы выбрать один из шаблонов
+            string selectedFile = _fileDialog.OpenFile("JSON шаблоны (*.json)|*.json");
+            if (selectedFile == null)
+                return;
+
+            // Загружаем шаблон по имени файла
+            var template = TemplateService.LoadTemplate(Path.GetFileName(selectedFile));
+            Actions.Add(template);
+            AddLog($"Загружен шаблон: {template.TemplateName}");
+        }
+        catch (Exception ex)
+        {
+            AddLog("[Ошибка загрузки шаблона] " + ex.Message);
+        }
+    }
+
+    private void EditTemplate()
+    {
+        if (SelectedAction is not CustomAction template)
+        {
+            AddLog("Выберите шаблон для редактирования.");
+            return;
+        }
+
+        var vm = new NewTemplateVM
+        {
+            TemplateName = template.TemplateName,
+            TemplateCode = template.TemplateCode
+        };
+
+        // Копируем параметры
+        vm.Parameters.Clear();
+        foreach (var p in template.Parameters)
+            vm.Parameters.Add(new ParameterItem { Name = p.Name, Value = p.Value });
+
+        if (_windowService.ShowDialog(vm) == true)
+        {
+            // Обновляем шаблон
+            template.TemplateName = vm.TemplateName;
+            template.TemplateCode = vm.TemplateCode;
+
+            template.Parameters.Clear();
+            foreach (var p in vm.Parameters)
+                template.Parameters.Add(new ParameterItem { Name = p.Name, Value = p.Value });
+
+            TemplateService.SaveTemplate(template);
+
+            AddLog($"Шаблон '{template.TemplateName}' обновлён");
+        }
+    }
+
+
+
 }
 
