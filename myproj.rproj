@@ -1,0 +1,20 @@
+[
+  {
+    "$type": "Move",
+    "SpeedLeft": 100,
+    "SpeedRight": 100,
+    "DurationMs": 1000
+  },
+  {
+    "$type": "Move",
+    "SpeedLeft": 100,
+    "SpeedRight": 100,
+    "DurationMs": 1000
+  },
+  {
+    "$type": "Move",
+    "SpeedLeft": 100,
+    "SpeedRight": 100,
+    "DurationMs": 1000
+  }
+]

@@ -1,22 +1,23 @@
-﻿using RobotProgrammer.Model;      // если модели тут
+﻿using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
-
 using System.Windows.Input;
 using ViewModel;
-
+using RobotProgrammer.Model;
 namespace RobotProgrammer.ViewModel;
 
 public class MainVM: INotifyPropertyChanged
 {
+    private readonly IFileDialogService _fileDialog;
+    private RobotAction _selectedAction;
     public ObservableCollection<RobotAction> Actions { get; } = new();
     public event PropertyChangedEventHandler PropertyChanged;
     private void OnPropertyChanged(string propertyName)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     public ICommand AddMoveCommand { get; }
     public ICommand AddWaitCommand { get; }
-
+    public ICommand SaveAsProjectCommand { get; }
+    public ICommand OpenProjectCommand { get; }
     public ICommand CompileCommand { get; }
     public ICommand UploadCommand { get; }
 
@@ -36,14 +37,52 @@ public class MainVM: INotifyPropertyChanged
 
     private string projectPath = "robot"; // путь к скетчу
 
-    public MainVM()
+    public MainVM(IFileDialogService fileDialog)
     {
+        _fileDialog = fileDialog;
         AddMoveCommand = new RelayCommand(AddMove);
         AddWaitCommand = new RelayCommand(AddWait);
-
+        SaveAsProjectCommand = new RelayCommand(SaveAsProject);
+        OpenProjectCommand = new RelayCommand(OpenProject);
         CompileCommand = new RelayCommand(Compile);
         UploadCommand = new RelayCommand(Upload);
     }
+    private void SaveAsProject()
+    {
+        var path = _fileDialog.SaveFile(
+            "Robot project (*.rproj)|*.rproj",
+            ".rproj");
+
+        if (path == null)
+            return;
+
+        ProjectFileSaving.Save(path, Actions);
+        AddLog($"Проект сохранён: {path}");
+    }
+
+    private void OpenProject()
+    {
+        try
+        {
+            var path = _fileDialog.OpenFile("Robot project (*.rproj)|*.rproj");
+
+            if (path == null)
+                return;
+
+            Actions.Clear();
+
+            var loaded = ProjectFileSaving.Load(path);
+            foreach (var action in loaded)
+                Actions.Add(action);
+
+            AddLog($"Проект загружен: {path}");
+        }
+        catch (Exception ex)
+        {
+            AddLog("[Ошибка загрузки] " + ex.Message);
+        }
+    }
+
 
     private void AddMove()
     {
@@ -87,6 +126,16 @@ public class MainVM: INotifyPropertyChanged
         catch (Exception ex)
         {
             AddLog("[Ошибка] " + ex.Message);
+        }
+    }
+    
+    public RobotAction SelectedAction
+    {
+        get => _selectedAction;
+        set
+        {
+            _selectedAction = value;
+            OnPropertyChanged(nameof(SelectedAction));
         }
     }
 }
