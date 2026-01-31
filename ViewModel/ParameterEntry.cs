@@ -1,20 +1,37 @@
 ﻿using RobotProgrammer.Model;
-using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows.Input;
 using ViewModel;
 
 namespace RobotProgrammer.ViewModel
 {
-    public class NewTemplateVM : INotifyPropertyChanged
+    public class ParameterEntry : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged(string name)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        public event EventHandler<bool> RequestClose; // для закрытия окна
+        private string _name;
+        public string Name
+        {
+            get => _name;
+            set { _name = value; OnPropertyChanged(nameof(Name)); }
+        }
+
+        private int _value;
+        public int Value
+        {
+            get => _value;
+            set { _value = value; OnPropertyChanged(nameof(Value)); }
+        }
+    }
+
+    public class NewTemplateViewModel : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyChanged(string name)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
         public CustomAction Result { get; private set; } = new();
 
@@ -32,14 +49,16 @@ namespace RobotProgrammer.ViewModel
             set { _templateCode = value; OnPropertyChanged(nameof(TemplateCode)); }
         }
 
-        public ObservableCollection<ParameterItem> Parameters { get; } = new();
+        public ObservableCollection<ParameterEntry> Parameters { get; } = new();
 
         public ICommand AddParameterCommand { get; }
         public ICommand RemoveParameterCommand { get; }
         public ICommand OkCommand { get; }
         public ICommand CancelCommand { get; }
 
-        public NewTemplateVM()
+        public bool? DialogResult { get; private set; }
+
+        public NewTemplateViewModel()
         {
             AddParameterCommand = new RelayCommand(AddParameter);
             RemoveParameterCommand = new RelayCommand(RemoveParameter);
@@ -49,12 +68,12 @@ namespace RobotProgrammer.ViewModel
 
         private void AddParameter()
         {
-            Parameters.Add(new ParameterItem { Name = "Param" + (Parameters.Count + 1), Value = 0 });
+            Parameters.Add(new ParameterEntry { Name = "param", Value = 0 });
         }
 
         private void RemoveParameter()
         {
-            if (Parameters.Any())
+            if (Parameters.Count > 0)
                 Parameters.RemoveAt(Parameters.Count - 1);
         }
 
@@ -62,14 +81,17 @@ namespace RobotProgrammer.ViewModel
         {
             Result.TemplateName = TemplateName;
             Result.TemplateCode = TemplateCode;
-            Result.Parameters = Parameters.ToDictionary(p => p.Name, p => p.Value);
+            Result.Parameters.Clear();
 
-            RequestClose?.Invoke(this, true);
+            foreach (var p in Parameters)
+                Result.Parameters[p.Name] = p.Value;
+
+            DialogResult = true;
         }
 
         private void Cancel()
         {
-            RequestClose?.Invoke(this, false);
+            DialogResult = false;
         }
     }
 }

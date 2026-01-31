@@ -6,23 +6,25 @@ namespace RobotProgrammer.Model
     {
         public string TemplateName { get; set; } = "Новый шаблон";
 
-        // Параметры действия: ключ = имя, значение = текущее значение
-        public Dictionary<string, int> Parameters { get; set; } = new();
-
-        // Тело кода с плейсхолдерами {ParamName}
+        // Код шаблона с {Placeholders} для параметров
         public string TemplateCode { get; set; } = "";
 
-        // Для отображения типа в таблице
+        // Параметры, которые пользователь может задавать
+        public Dictionary<string, int> Parameters { get; set; } = new();
+
         public override string DisplayType => TemplateName;
 
-        // Метод генерации кода для Arduino
+        // Генерация кода для Arduino
         public override string GenerateCode()
         {
             string code = TemplateCode;
+
             foreach (var kv in Parameters)
             {
+                // заменяем {ParameterName} на значение
                 code = code.Replace("{" + kv.Key + "}", kv.Value.ToString());
             }
+
             return code;
         }
     }
