@@ -23,6 +23,7 @@ public class MainVM: INotifyPropertyChanged
     public ICommand UploadCommand { get; }
     public ICommand NewTemplateCommand { get; }
     public ICommand LoadTemplateCommand { get; }
+    public ICommand EditTemplateCommand { get; }
 
 
     private readonly ArduinoCodeGenerator _generator = new();
@@ -53,6 +54,7 @@ public class MainVM: INotifyPropertyChanged
         UploadCommand = new RelayCommand(Upload);
         NewTemplateCommand = new RelayCommand(OpenNewTemplateWindow);
         LoadTemplateCommand = new RelayCommand(OpenTemplatePicker);
+        EditTemplateCommand = new RelayCommand(EditTemplate);
 
     }
     private void SaveAsProject()
@@ -179,6 +181,41 @@ public class MainVM: INotifyPropertyChanged
         catch (Exception ex)
         {
             AddLog("[Ошибка загрузки шаблона] " + ex.Message);
+        }
+    }
+
+    private void EditTemplate()
+    {
+        if (SelectedAction is not CustomAction template)
+        {
+            AddLog("Выберите шаблон для редактирования.");
+            return;
+        }
+
+        var vm = new NewTemplateVM
+        {
+            TemplateName = template.TemplateName,
+            TemplateCode = template.TemplateCode
+        };
+
+        // Копируем параметры
+        vm.Parameters.Clear();
+        foreach (var p in template.Parameters)
+            vm.Parameters.Add(new ParameterItem { Name = p.Name, Value = p.Value });
+
+        if (_windowService.ShowDialog(vm) == true)
+        {
+            // Обновляем шаблон
+            template.TemplateName = vm.TemplateName;
+            template.TemplateCode = vm.TemplateCode;
+
+            template.Parameters.Clear();
+            foreach (var p in vm.Parameters)
+                template.Parameters.Add(new ParameterItem { Name = p.Name, Value = p.Value });
+
+            TemplateService.SaveTemplate(template);
+
+            AddLog($"Шаблон '{template.TemplateName}' обновлён");
         }
     }
 
