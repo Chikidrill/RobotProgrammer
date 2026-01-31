@@ -22,7 +22,11 @@
             <Button Content="Загрузить" Width="100" Margin="0,0,10,0" Command="{Binding UploadCommand}" />
             <Button Content="Сохранить как..." Width="100" Margin="0,0,10,0" Command="{Binding SaveAsProjectCommand}" />
             <Button Content="Открыть проект..." Width="100" Margin="0,0,10,0" Command="{Binding OpenProjectCommand}" />
+            <Button Content="Новый шаблон" Width="120" Margin="0,0,10,0"
+        Command="{Binding NewTemplateCommand}" />
+
         </StackPanel>
+        
 
         <!-- Основная рабочая зона: таблица действий + редактор -->
         <Grid Grid.Row="1">

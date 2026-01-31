@@ -11,7 +11,7 @@ namespace RobotProgrammer.View
         public MainWindow()
         {
             InitializeComponent();
-            DataContext = new MainVM(new FileDialogService());
+            DataContext = new MainVM(new FileDialogService(), new WindowService());
         }
     }
 }

@@ -10,6 +10,7 @@ public class MainVM: INotifyPropertyChanged
 {
     private readonly IFileDialogService _fileDialog;
     private RobotAction _selectedAction;
+    private IWindowService _windowService;
     public ObservableCollection<RobotAction> Actions { get; } = new();
     public event PropertyChangedEventHandler PropertyChanged;
     private void OnPropertyChanged(string propertyName)
@@ -20,6 +21,7 @@ public class MainVM: INotifyPropertyChanged
     public ICommand OpenProjectCommand { get; }
     public ICommand CompileCommand { get; }
     public ICommand UploadCommand { get; }
+    public ICommand NewTemplateCommand { get; }
 
     private readonly ArduinoCodeGenerator _generator = new();
     private readonly ArduinoCliService _cli = new();
@@ -37,15 +39,17 @@ public class MainVM: INotifyPropertyChanged
 
     private string projectPath = "robot"; // путь к скетчу
 
-    public MainVM(IFileDialogService fileDialog)
+    public MainVM(IFileDialogService fileDialog, IWindowService windowService)
     {
         _fileDialog = fileDialog;
+        _windowService = windowService;
         AddMoveCommand = new RelayCommand(AddMove);
         AddWaitCommand = new RelayCommand(AddWait);
         SaveAsProjectCommand = new RelayCommand(SaveAsProject);
         OpenProjectCommand = new RelayCommand(OpenProject);
         CompileCommand = new RelayCommand(Compile);
         UploadCommand = new RelayCommand(Upload);
+        NewTemplateCommand = new RelayCommand(OpenNewTemplateWindow);
     }
     private void SaveAsProject()
     {
@@ -82,7 +86,6 @@ public class MainVM: INotifyPropertyChanged
             AddLog("[Ошибка загрузки] " + ex.Message);
         }
     }
-
 
     private void AddMove()
     {
@@ -136,6 +139,15 @@ public class MainVM: INotifyPropertyChanged
         {
             _selectedAction = value;
             OnPropertyChanged(nameof(SelectedAction));
+        }
+    }
+    private void OpenNewTemplateWindow()
+    {
+        var templateVM = new NewTemplateVM();
+        if (_windowService.ShowDialog(templateVM) == true)
+        {
+            Actions.Add(templateVM.Result);
+            AddLog($"Создан новый шаблон: {templateVM.Result.TemplateName}");
         }
     }
 }

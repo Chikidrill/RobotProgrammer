@@ -16,7 +16,7 @@ namespace RobotProgrammer.Model
         public override string DisplayType => TemplateName;
 
         // Метод генерации кода для Arduino
-        public string GenerateCode()
+        public override string GenerateCode()
         {
             string code = TemplateCode;
             foreach (var kv in Parameters)
