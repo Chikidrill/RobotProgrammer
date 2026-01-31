@@ -1,9 +1,7 @@
 ﻿namespace RobotProgrammer.Model;
+
 public class MoveAction : RobotAction
 {
-    public override string ActionType => "Move";
-
-
     public override string GenerateCode()
     {
         return $@"
