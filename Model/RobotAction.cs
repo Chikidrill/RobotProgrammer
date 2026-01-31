@@ -9,7 +9,9 @@ public abstract class RobotAction
     public int SpeedLeft { get; set; }
     public int SpeedRight { get; set; }
     public int DurationMs { get; set; }
-
+    [JsonPropertyName("ActionType")]
+    public abstract string ActionType { get; }
+    [JsonIgnore]
     public virtual string DisplayType => GetType().Name.Replace("Action", "");
     public abstract string GenerateCode();
 }

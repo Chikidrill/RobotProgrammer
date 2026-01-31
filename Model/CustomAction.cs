@@ -5,6 +5,8 @@ namespace RobotProgrammer.Model
 {
     public class CustomAction : RobotAction
     {
+        public CustomAction() { }
+        public override string ActionType => "MoveAction";
         public string TemplateName { get; set; } = "Новый шаблон";
 
         // Код шаблона с {Placeholders} для параметров

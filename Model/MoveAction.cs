@@ -2,6 +2,8 @@
 
 public class MoveAction : RobotAction
 {
+    public MoveAction() { }
+    public override string ActionType => "MoveAction";
     public override string GenerateCode()
     {
         return $@"

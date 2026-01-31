@@ -4,19 +4,24 @@ namespace RobotProgrammer.Model;
 
 public static class ProjectFileSaving
 {
+    private static JsonSerializerOptions GetOptions()
+    {
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        options.Converters.Add(new RobotActionConverter());
+        return options;
+    }
+
+
+
     public static void Save(string filePath, IEnumerable<RobotAction> actions)
     {
-        var json = JsonSerializer.Serialize(actions, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-
+        var json = JsonSerializer.Serialize(actions, GetOptions());
         File.WriteAllText(filePath, json);
     }
 
     public static List<RobotAction> Load(string filePath)
     {
         var json = File.ReadAllText(filePath);
-        return JsonSerializer.Deserialize<List<RobotAction>>(json);
+        return JsonSerializer.Deserialize<List<RobotAction>>(json, GetOptions())!;
     }
 }
