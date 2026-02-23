@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:RobotProgrammer.Model;assembly=Model"
-        Title="Robot Programmer" Height="450" Width="800">
+        Title="Robot Programmer" Height="450" Width="800"
+        Icon="/Resources/icon.png">
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -16,27 +17,27 @@
 
         <!-- Панель кнопок -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <Menu Margin="0,0,10,0">
+            <Menu Margin="0,0,10,0" BorderThickness="1" BorderBrush="Gray">
                 <MenuItem Header="Файл">
                     <MenuItem Header="Сохранить как..."  Command="{Binding SaveAsProjectCommand}" />
                     <MenuItem Header="Открыть проект..." Command="{Binding OpenProjectCommand}" />
                 </MenuItem>
             </Menu>
-            <Menu Margin="0,0,10,0">
-                <MenuItem Header="Добавить действие">
+            <Menu Margin="0,0,10,0" BorderThickness="1" BorderBrush="Gray">
+                <MenuItem Header="Добавить действие" >
                     <MenuItem Header="Добавить движение" Command="{Binding AddMoveCommand}" />
                     <MenuItem Header="Добавить паузу" Command="{Binding AddWaitCommand}" />
                 </MenuItem>
             </Menu>
 
-            <Menu Margin="0,0,10,0">
+            <Menu Margin="0,0,10,0" BorderThickness="1" BorderBrush="Gray">
                 <MenuItem Header="Шаблон">
                     <MenuItem Header="Новый шаблон" Command="{Binding NewTemplateCommand}" />
                     <MenuItem Header="Загрузить шаблон"  Command="{Binding LoadTemplateCommand}" />
                     <MenuItem Header="Редактировать шаблон" Command="{Binding EditTemplateCommand}" />
                 </MenuItem>
             </Menu>
-            <Menu>
+            <Menu BorderThickness="1" BorderBrush="Gray">
                 <MenuItem Header="Программа">
                     <MenuItem Header="Компилировать" Command="{Binding CompileCommand}" />
                     <MenuItem Header="Загрузить" Command="{Binding UploadCommand}" />
@@ -56,21 +57,38 @@
 
             <!-- Таблица действий -->
             <DataGrid Grid.Column="0"
-                      ItemsSource="{Binding Actions}"
-                      SelectedItem="{Binding SelectedAction}"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      Margin="0,0,10,0">
+          ItemsSource="{Binding Actions}"
+          SelectedItem="{Binding SelectedAction}"
+          AutoGenerateColumns="False"
+          CanUserAddRows="False"
+          Margin="0,0,10,0">
+
                 <DataGrid.Columns>
-                    
+                    <!-- Тип действия -->
                     <DataGridTextColumn Header="Тип" Binding="{Binding DisplayType}" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Speed L" Binding="{Binding SpeedLeft}"/>
-                    <DataGridTextColumn Header="Speed R" Binding="{Binding SpeedRight}"/>
-                    <DataGridTextColumn Header="Время (мс)" Binding="{Binding DurationMs}"/>
+
+                  
+
+                    <!-- Колонка для параметров CustomAction -->
+                    <DataGridTemplateColumn Header="Параметры">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ItemsControl ItemsSource="{Binding Parameters}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}" Width="80"/>
+                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
-               
             </DataGrid>
-           
+
             <!-- Редактор выбранного действия -->
             <Border Grid.Column="1" Padding="10" BorderBrush="Gray" BorderThickness="1">
 
@@ -79,23 +97,36 @@
                         <!-- Шаблон для MoveAction -->
                         <DataTemplate DataType="{x:Type local:MoveAction}">
                             <StackPanel>
-                                <TextBlock Text="Скорость левого мотора"/>
-                                <TextBox Text="{Binding SpeedLeft}" Margin="0,0,0,5"/>
-                                <TextBlock Text="Скорость правого мотора"/>
-                                <TextBox Text="{Binding SpeedRight}" Margin="0,0,0,5"/>
-                                <TextBlock Text="Время (мс)"/>
-                                <TextBox Text="{Binding DurationMs}"/>
+                                <TextBlock Text="Параметры движения:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                <ItemsControl ItemsSource="{Binding Parameters}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                                <TextBlock Text="{Binding Name}" Width="80"/>
+                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </DataTemplate>
 
                         <!-- Шаблон для WaitAction -->
                         <DataTemplate DataType="{x:Type local:WaitAction}">
                             <StackPanel>
-                                <TextBlock Text="Время ожидания (мс)"/>
-                                <TextBox Text="{Binding DurationMs}"/>
+                                <TextBlock Text="Параметры паузы:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                <ItemsControl ItemsSource="{Binding Parameters}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                                <TextBlock Text="{Binding Name}" Width="80"/>
+                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </DataTemplate>
-
                         <!-- Шаблон для CustomAction -->
                         <DataTemplate DataType="{x:Type local:CustomAction}">
                             <StackPanel>
@@ -127,7 +158,7 @@
         </Grid>
 
         <!-- Лог -->
-        <TextBox Grid.Row="2" Height="150" Margin="0,10,0,0" 
+        <TextBox Grid.Row="2" Height="130" Margin="0,10,0,0" 
                  Text="{Binding LogString, Mode=OneWay}" 
                  IsReadOnly="True" 
                  TextWrapping="Wrap" 

@@ -14,12 +14,22 @@ public class ParameterItem : INotifyPropertyChanged
             {
                 _value = value;
                 OnPropertyChanged(nameof(Value));
+                OnPropertyChanged(nameof(IntValue));
             }
         }
     }
 
-    // Получить int для кода
-    public int IntValue => int.TryParse(_value, out var v) ? v : 0;
+    // IntValue теперь можно и читать, и писать
+    public int IntValue
+    {
+        get => int.TryParse(_value, out var v) ? v : 0;
+        set
+        {
+            _value = value.ToString();
+            OnPropertyChanged(nameof(Value));
+            OnPropertyChanged(nameof(IntValue));
+        }
+    }
 
     public event PropertyChangedEventHandler PropertyChanged;
     private void OnPropertyChanged(string name)

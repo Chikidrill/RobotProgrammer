@@ -1,20 +1,14 @@
 [
   {
+    "ActionType": "MoveAction",
     "SpeedLeft": 100,
     "SpeedRight": 100,
-    "DurationMs": 1000,
-    "DisplayType": "Move"
+    "DurationMs": 1000
   },
   {
+    "ActionType": "MoveAction",
     "SpeedLeft": 100,
     "SpeedRight": 100,
-    "DurationMs": 1000,
-    "DisplayType": "Move"
-  },
-  {
-    "SpeedLeft": 50,
-    "SpeedRight": 100,
-    "DurationMs": 0,
-    "DisplayType": "Move2"
+    "DurationMs": 1000
   }
 ]

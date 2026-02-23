@@ -13,8 +13,12 @@ public class MainVM: INotifyPropertyChanged
     private IWindowService _windowService;
     public ObservableCollection<RobotAction> Actions { get; } = new();
     public event PropertyChangedEventHandler PropertyChanged;
+
+    public ObservableCollection<ActionParameter> SelectedParameters =>
+    SelectedAction?.GetParameters() ?? new();
     private void OnPropertyChanged(string propertyName)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
     public ICommand AddMoveCommand { get; }
     public ICommand AddWaitCommand { get; }
     public ICommand SaveAsProjectCommand { get; }
@@ -95,13 +99,13 @@ public class MainVM: INotifyPropertyChanged
 
     private void AddMove()
     {
-        Actions.Add(new MoveAction { SpeedLeft = 100, SpeedRight = 100, DurationMs = 1000 });
+        Actions.Add(new MoveAction());
         AddLog("Добавлено движение");
     }
 
     private void AddWait()
     {
-        Actions.Add(new WaitAction { DurationMs = 500 });
+        Actions.Add(new WaitAction());
         AddLog("Добавлена пауза");
     }
 
@@ -109,6 +113,7 @@ public class MainVM: INotifyPropertyChanged
     {
         try
         {
+            SelectedAction?.ApplyParameters(SelectedParameters);
             // Генерируем код
             Directory.CreateDirectory(projectPath);
             string code = _generator.GenerateCode(Actions);
@@ -129,7 +134,8 @@ public class MainVM: INotifyPropertyChanged
     {
         try
         {
-            _cli.Upload(projectPath, "COM3", line => AddLog(line)); // COM порт можно вынести в настройки
+            Compile();
+            _cli.Upload(projectPath, "COM5", line => AddLog(line)); // COM порт можно вынести в настройки
             AddLog("Загрузка завершена");
         }
         catch (Exception ex)
@@ -145,6 +151,7 @@ public class MainVM: INotifyPropertyChanged
         {
             _selectedAction = value;
             OnPropertyChanged(nameof(SelectedAction));
+            OnPropertyChanged(nameof(SelectedParameters));
         }
     }
     private void OpenNewTemplateWindow()
