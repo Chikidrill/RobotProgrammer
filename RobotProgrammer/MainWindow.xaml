@@ -156,12 +156,20 @@
             <GridSplitter HorizontalAlignment="Left" Height="224" Margin="510,10,0,0" VerticalAlignment="Top" Width="5"/>
             
         </Grid>
-
+        
+        
         <!-- Лог -->
-        <TextBox Grid.Row="2" Height="130" Margin="0,10,0,0" 
-                 Text="{Binding LogString, Mode=OneWay}" 
-                 IsReadOnly="True" 
-                 TextWrapping="Wrap" 
-                 VerticalScrollBarVisibility="Auto"/>
+        
+        <TabControl Grid.Row="2">
+            <TabItem Header="Лог">
+                <TextBox Text="{Binding LogString, Mode=OneWay}" 
+                     IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+            </TabItem>
+            <TabItem Header="Предварительный код">
+                <TextBox Text="{Binding PreviewCode, Mode=OneWay}" 
+                     IsReadOnly="True" FontFamily="Consolas" TextWrapping="NoWrap" HorizontalScrollBarVisibility="Auto"/>
+            </TabItem>
+        </TabControl>
+
     </Grid>
 </Window>

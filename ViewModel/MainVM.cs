@@ -11,6 +11,7 @@ public class MainVM: INotifyPropertyChanged
     private readonly IFileDialogService _fileDialog;
     private RobotAction _selectedAction;
     private IWindowService _windowService;
+    private string _previewCode;
     public ObservableCollection<RobotAction> Actions { get; } = new();
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -90,6 +91,7 @@ public class MainVM: INotifyPropertyChanged
                 Actions.Add(action);
 
             AddLog($"Проект загружен: {path}");
+            UpdatePreview();
         }
         catch (Exception ex)
         {
@@ -101,12 +103,14 @@ public class MainVM: INotifyPropertyChanged
     {
         Actions.Add(new MoveAction());
         AddLog("Добавлено движение");
+        UpdatePreview();
     }
 
     private void AddWait()
     {
         Actions.Add(new WaitAction());
         AddLog("Добавлена пауза");
+        UpdatePreview();
     }
 
     private void Compile()
@@ -152,6 +156,7 @@ public class MainVM: INotifyPropertyChanged
             _selectedAction = value;
             OnPropertyChanged(nameof(SelectedAction));
             OnPropertyChanged(nameof(SelectedParameters));
+            UpdatePreview();
         }
     }
     private void OpenNewTemplateWindow()
@@ -184,6 +189,7 @@ public class MainVM: INotifyPropertyChanged
             var template = TemplateService.LoadTemplate(Path.GetFileName(selectedFile));
             Actions.Add(template);
             AddLog($"Загружен шаблон: {template.TemplateName}");
+            UpdatePreview();
         }
         catch (Exception ex)
         {
@@ -223,9 +229,19 @@ public class MainVM: INotifyPropertyChanged
             TemplateService.SaveTemplate(template);
 
             AddLog($"Шаблон '{template.TemplateName}' обновлён");
+            UpdatePreview();
         }
     }
+    public string PreviewCode
+    {
+        get => _previewCode;
+        set { _previewCode = value; OnPropertyChanged(nameof(PreviewCode)); }
+    }
 
+    private void UpdatePreview()
+    {
+        PreviewCode = _generator.GenerateCode(Actions);
+    }
 
 
 }
