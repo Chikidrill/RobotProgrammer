@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Model.Services;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace RobotProgrammer.Model
+namespace Model.RobotActions
 {
     public class CustomAction : RobotAction
     {
@@ -38,6 +39,5 @@ namespace RobotProgrammer.Model
                 var target = Parameters.FirstOrDefault(x => x.Name == p.Name);
                 if (target != null) target.IntValue = p.Value;
             }
-        }
     }
 }

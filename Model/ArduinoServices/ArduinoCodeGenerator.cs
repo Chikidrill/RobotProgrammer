@@ -1,5 +1,6 @@
-﻿using System.IO;
-namespace RobotProgrammer.Model;
+﻿using Model.RobotActions;
+using System.IO;
+namespace Model.ArduinoServices;
 public class ArduinoCodeGenerator
 {
     public string GenerateCode(IEnumerable<RobotAction> actions)

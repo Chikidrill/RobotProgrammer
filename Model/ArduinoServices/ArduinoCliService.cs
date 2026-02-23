@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 
-namespace RobotProgrammer.Model;
+namespace Model.ArduinoServices;
 public class ArduinoCliService
 {
     private const string ArduinoCliExe = "C:\\Users\\dvorn\\source\\repos\\RobotProgrammerApp\\Model\\arduino-cli.exe";

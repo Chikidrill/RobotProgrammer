@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Model.RobotActions;
+using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace RobotProgrammer.Model;
+namespace Model.Services;
 
 public class RobotActionConverter : JsonConverter<RobotAction>
 {

@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using Model.RobotActions;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
-namespace RobotProgrammer.Model
+namespace Model.Services
 {
     public static class TemplateService
     {

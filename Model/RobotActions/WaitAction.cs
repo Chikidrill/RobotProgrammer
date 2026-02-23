@@ -1,7 +1,8 @@
-﻿using System.Collections.ObjectModel;
+﻿using Model.Services;
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
-namespace RobotProgrammer.Model;
+namespace Model.RobotActions;
 
 public class WaitAction : RobotAction
 {

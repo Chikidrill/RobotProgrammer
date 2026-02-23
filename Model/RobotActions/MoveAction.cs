@@ -1,6 +1,7 @@
-﻿using System.Collections.ObjectModel;
+﻿using Model.Services;
+using System.Collections.ObjectModel;
 
-namespace RobotProgrammer.Model;
+namespace Model.RobotActions;
 
 public class MoveAction : RobotAction
 {

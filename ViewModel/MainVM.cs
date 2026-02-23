@@ -1,9 +1,13 @@
 ﻿using Microsoft.Win32;
+using System.Windows;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
 using ViewModel;
-using RobotProgrammer.Model;
+using System.Data;
+using Model.RobotActions;
+using Model.ArduinoServices;
+using Model.Services;
 namespace RobotProgrammer.ViewModel;
 
 public class MainVM: INotifyPropertyChanged
@@ -14,7 +18,7 @@ public class MainVM: INotifyPropertyChanged
     private string _previewCode;
     public ObservableCollection<RobotAction> Actions { get; } = new();
     public event PropertyChangedEventHandler PropertyChanged;
-
+    private readonly IDialogService _dialogService;
     public ObservableCollection<ActionParameter> SelectedParameters =>
     SelectedAction?.GetParameters() ?? new();
     private void OnPropertyChanged(string propertyName)
@@ -29,7 +33,6 @@ public class MainVM: INotifyPropertyChanged
     public ICommand NewTemplateCommand { get; }
     public ICommand LoadTemplateCommand { get; }
     public ICommand EditTemplateCommand { get; }
-
 
     private readonly ArduinoCodeGenerator _generator = new();
     private readonly ArduinoCliService _cli = new();
@@ -47,7 +50,7 @@ public class MainVM: INotifyPropertyChanged
 
     private string projectPath = "robot"; // путь к скетчу
 
-    public MainVM(IFileDialogService fileDialog, IWindowService windowService)
+    public MainVM(IFileDialogService fileDialog, IWindowService windowService, IDialogService dialogService)
     {
         _fileDialog = fileDialog;
         _windowService = windowService;
@@ -60,7 +63,8 @@ public class MainVM: INotifyPropertyChanged
         NewTemplateCommand = new RelayCommand(OpenNewTemplateWindow);
         LoadTemplateCommand = new RelayCommand(OpenTemplatePicker);
         EditTemplateCommand = new RelayCommand(EditTemplate);
-
+        _dialogService = dialogService;
+        Actions = new ObservableCollection<RobotAction>();
     }
     private void SaveAsProject()
     {
@@ -117,20 +121,26 @@ public class MainVM: INotifyPropertyChanged
     {
         try
         {
-            SelectedAction?.ApplyParameters(SelectedParameters);
-            // Генерируем код
             Directory.CreateDirectory(projectPath);
             string code = _generator.GenerateCode(Actions);
             File.WriteAllText(Path.Combine(projectPath, "robot.ino"), code);
             AddLog("Код сгенерирован");
 
-            // Компиляция
-            _cli.Compile(projectPath, line => AddLog(line));
-            AddLog("Компиляция завершена");
+            try
+            {
+                _cli.Compile(projectPath, line => AddLog(line));
+                AddLog("Компиляция завершена");
+            }
+            catch (Exception ex)
+            {
+                AddLog("[Ошибка компиляции] " + ex.Message);
+                File.WriteAllText(Path.Combine(projectPath, "compile_errors.log"), ex.ToString());
+            }
         }
         catch (Exception ex)
         {
-                AddLog("[Ошибка] " + ex.Message);
+            AddLog("[Ошибка] " + ex.Message);
+            File.WriteAllText(Path.Combine(projectPath, "compile_errors.log"), ex.ToString());
         }
     }
 

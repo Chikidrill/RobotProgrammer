@@ -62,14 +62,8 @@
           AutoGenerateColumns="False"
           CanUserAddRows="False"
           Margin="0,0,10,0">
-
                 <DataGrid.Columns>
-                    <!-- Тип действия -->
                     <DataGridTextColumn Header="Тип" Binding="{Binding DisplayType}" IsReadOnly="True"/>
-
-                  
-
-                    <!-- Колонка для параметров CustomAction -->
                     <DataGridTemplateColumn Header="Параметры">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -172,4 +166,6 @@
         </TabControl>
 
     </Grid>
+    <!-- В Resources -->
+    
 </Window>

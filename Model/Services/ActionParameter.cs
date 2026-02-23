@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace RobotProgrammer.Model
+namespace Model.Services
 {
     public class ActionParameter : INotifyPropertyChanged
     {

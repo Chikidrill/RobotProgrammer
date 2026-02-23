@@ -1,5 +1,9 @@
 ﻿using RobotProgrammer.ViewModel;
+using System.Security.AccessControl;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace RobotProgrammer.View
 {
@@ -11,7 +15,8 @@ namespace RobotProgrammer.View
         public MainWindow()
         {
             InitializeComponent();
-            DataContext = new MainVM(new FileDialogService(), new WindowService());
+            DataContext = new MainVM(new FileDialogService(), new WindowService(), new DialogService());
+            
         }
     }
 }
