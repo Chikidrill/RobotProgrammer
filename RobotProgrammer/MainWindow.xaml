@@ -1,7 +1,7 @@
 ﻿<Window x:Class="RobotProgrammer.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:RobotProgrammer.Model;assembly=Model"
+        xmlns:actions="clr-namespace:Model.RobotActions;assembly=Model"
         Title="Robot Programmer" Height="450" Width="800"
         Icon="/Resources/icon.png">
 
@@ -27,6 +27,8 @@
                 <MenuItem Header="Добавить действие" >
                     <MenuItem Header="Добавить движение" Command="{Binding AddMoveCommand}" />
                     <MenuItem Header="Добавить паузу" Command="{Binding AddWaitCommand}" />
+                    <MenuItem Header="Добавить цикл" Command="{Binding AddLoopCommand}" />
+                    <MenuItem Header="Добавить условие" Command="{Binding AddConditionalCommand}" />
                 </MenuItem>
             </Menu>
 
@@ -56,32 +58,71 @@
             </Grid.ColumnDefinitions>
 
             <!-- Таблица действий -->
-            <DataGrid Grid.Column="0"
+            <TreeView x:Name="ActionsTree"
           ItemsSource="{Binding Actions}"
-          SelectedItem="{Binding SelectedAction}"
-          AutoGenerateColumns="False"
-          CanUserAddRows="False"
-          Margin="0,0,10,0">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Тип" Binding="{Binding DisplayType}" IsReadOnly="True"/>
-                    <DataGridTemplateColumn Header="Параметры">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ItemsControl ItemsSource="{Binding Parameters}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Name}" Width="80"/>
-                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
+          SelectedItemChanged="Tree_SelectedItemChanged"
+          AllowDrop="True"
+          PreviewMouseLeftButtonDown="Tree_PreviewMouseLeftButtonDown"
+          MouseMove="Tree_MouseMove"
+          DragOver="Tree_DragOver"
+          Drop="Tree_Drop">
+                <TreeView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Удалить" Command="{Binding DeleteSelectedCommand}" />
+                        <MenuItem Header="Копировать" Command="{Binding CopySelectedCommand}" />
+                        <MenuItem Header="Вставить" Command="{Binding PasteSelectedCommand}" />
+                    </ContextMenu>
+                </TreeView.ContextMenu>
+                <TreeView.Resources>
+                    <!-- Общий стиль для всех TreeViewItem -->
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="Margin" Value="2"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TreeViewItem">
+                                    <DockPanel>
+                                        <!-- Заголовок блока -->
+                                        <Border x:Name="Bd"
+                                BorderBrush="Gray"
+                                BorderThickness="1"
+                                Background="#FFEFEFEF"
+                                CornerRadius="4"
+                                Padding="5"
+                                Margin="0,0,0,2"
+                                DockPanel.Dock="Top">
+                                            <ContentPresenter x:Name="PART_Header" ContentSource="Header"/>
+                                        </Border>
+
+                                        <!-- Дочерние элементы -->
+                                        <ItemsPresenter x:Name="ItemsHost" Margin="20,2,0,2"/>
+                                    </DockPanel>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#FFBEE6FD"/>
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="#FF3C7FB1"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#FFD9F1FF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <!-- HierarchicalDataTemplate для контейнеров -->
+                    <HierarchicalDataTemplate DataType="{x:Type actions:ContainerAction}" ItemsSource="{Binding Children}">
+                        <TextBlock Text="{Binding DisplayType}" FontWeight="Bold" Foreground="#333"/>
+                    </HierarchicalDataTemplate>
+
+                    <!-- DataTemplate для обычных действий -->
+                    <DataTemplate DataType="{x:Type actions:RobotAction}">
+                        <TextBlock Text="{Binding DisplayType}" Foreground="#444"/>
+                    </DataTemplate>
+                </TreeView.Resources>
+            </TreeView>
 
             <!-- Редактор выбранного действия -->
             <Border Grid.Column="1" Padding="10" BorderBrush="Gray" BorderThickness="1">
@@ -89,7 +130,7 @@
                 <ContentControl Content="{Binding SelectedAction}">
                     <ContentControl.Resources>
                         <!-- Шаблон для MoveAction -->
-                        <DataTemplate DataType="{x:Type local:MoveAction}">
+                        <DataTemplate DataType="{x:Type actions:MoveAction}">
                             <StackPanel>
                                 <TextBlock Text="Параметры движения:" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <ItemsControl ItemsSource="{Binding Parameters}">
@@ -106,7 +147,7 @@
                         </DataTemplate>
 
                         <!-- Шаблон для WaitAction -->
-                        <DataTemplate DataType="{x:Type local:WaitAction}">
+                        <DataTemplate DataType="{x:Type actions:WaitAction}">
                             <StackPanel>
                                 <TextBlock Text="Параметры паузы:" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <ItemsControl ItemsSource="{Binding Parameters}">
@@ -122,7 +163,7 @@
                             </StackPanel>
                         </DataTemplate>
                         <!-- Шаблон для CustomAction -->
-                        <DataTemplate DataType="{x:Type local:CustomAction}">
+                        <DataTemplate DataType="{x:Type actions:CustomAction}">
                             <StackPanel>
                                 <TextBlock Text="Пользовательский шаблон"/>
                                 <TextBlock Text="Имя:"/>
@@ -143,17 +184,50 @@
                                 </ItemsControl>
                             </StackPanel>
                         </DataTemplate>
+                        <DataTemplate DataType="{x:Type actions:LoopAction}">
+                            <StackPanel>
+                                <TextBlock Text="Цикл"/>
+                                <TextBlock Text="Повторов:"/>
+                                <TextBox Text="{Binding RepeatCount, Mode=TwoWay}" Width="50"/>
+                                <TextBlock Text="Действия внутри цикла:"/>
+                                <ItemsControl ItemsSource="{Binding Children}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayType}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+
+                        <!-- Условие -->
+                        <DataTemplate DataType="{x:Type actions:ConditionalAction}">
+                            <StackPanel>
+                                <TextBlock Text="Условие"/>
+                                <TextBlock Text="Выражение:"/>
+                                <TextBox Text="{Binding Condition, Mode=TwoWay}" Width="150"/>
+                                <TextBlock Text="Действия внутри условия:"/>
+                                <ItemsControl ItemsSource="{Binding TrueBranch}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayType}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+
 
                     </ContentControl.Resources>
                 </ContentControl>
             </Border>
             <GridSplitter HorizontalAlignment="Left" Height="224" Margin="510,10,0,0" VerticalAlignment="Top" Width="5"/>
-            
+
         </Grid>
-        
-        
+
+
         <!-- Лог -->
-        
+
         <TabControl Grid.Row="2">
             <TabItem Header="Лог">
                 <TextBox Text="{Binding LogString, Mode=OneWay}" 
@@ -166,6 +240,10 @@
         </TabControl>
 
     </Grid>
-    <!-- В Resources -->
-    
+    <Window.InputBindings>
+        <KeyBinding Key="Delete" Command="{Binding DeleteSelectedCommand}" />
+        <KeyBinding Modifiers="Control" Key="C" Command="{Binding CopySelectedCommand}" />
+        <KeyBinding Modifiers="Control" Key="V" Command="{Binding PasteSelectedCommand}" />
+    </Window.InputBindings>
+
 </Window>

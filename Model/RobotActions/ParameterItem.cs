@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+namespace Model.RobotActions;
 
 public class ParameterItem : INotifyPropertyChanged
 {

@@ -1,4 +1,4 @@
-﻿using RobotProgrammer.Model;
+﻿using RobotProgrammer;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
