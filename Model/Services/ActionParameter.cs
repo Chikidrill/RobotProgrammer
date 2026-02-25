@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace Model.Services
 {
@@ -16,7 +17,19 @@ namespace Model.Services
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
             }
         }
-
+        [JsonIgnore]
+        public string TextValue
+        {
+            get => _value.ToString();
+            set
+            {
+                if (int.TryParse(value, out int v))
+                    _value = v;
+                OnPropertyChanged(nameof(TextValue));
+                OnPropertyChanged(nameof(Value));
+            }
+        }
         public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

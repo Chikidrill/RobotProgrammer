@@ -1,26 +1,29 @@
-﻿using Model.RobotActions;
+﻿using System.Text;
+using Model.RobotActions;
 using System.IO;
+
 namespace Model.ArduinoServices;
+
 public class ArduinoCodeGenerator
 {
     public string GenerateCode(IEnumerable<RobotAction> actions)
     {
-        var actionsCode = string.Join("\n",
-            actions.Select(a => a.GenerateCode()));
+        var builder = new StringBuilder();
+
+        foreach (var action in actions)
+            builder.Append(action.GenerateCode());
 
         return $@"
 #include <PRIZM.h>
 
-
 PRIZM prizm;
-
 
 void setup() {{
   prizm.PrizmBegin();
 }}
 
 void loop() {{
-{actionsCode}
+{builder}
   while(true);
 }}
 ";
@@ -40,6 +43,6 @@ void loop() {{
 
         File.WriteAllText(filePath, code);
 
-        return folderPath; // важно для arduino-cli
+        return folderPath;
     }
 }

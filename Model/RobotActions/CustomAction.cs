@@ -39,5 +39,6 @@ namespace Model.RobotActions
                 var target = Parameters.FirstOrDefault(x => x.Name == p.Name);
                 if (target != null) target.IntValue = p.Value;
             }
+        }
     }
 }

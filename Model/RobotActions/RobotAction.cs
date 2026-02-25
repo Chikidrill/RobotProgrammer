@@ -6,6 +6,7 @@ namespace Model.RobotActions;
 
 public abstract class RobotAction
 {
+    public virtual bool IsContainer => false;
     [JsonPropertyName("ActionType")]
     public abstract string ActionType { get; }
     [JsonIgnore]
@@ -15,7 +16,8 @@ public abstract class RobotAction
     {
         return new ObservableCollection<ActionParameter>();
     }
-
+    [JsonIgnore]
+    public ContainerAction? Parent { get; set; }
     public virtual void ApplyParameters(IEnumerable<ActionParameter> parameters) { }
     public abstract string GenerateCode();
 }

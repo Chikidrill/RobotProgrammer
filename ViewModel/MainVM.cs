@@ -1,19 +1,20 @@
 ﻿using Microsoft.Win32;
-using System.Windows;
+using Model.ArduinoServices;
+using Model.RobotActions;
+using Model.Services;
+using Model;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data;
+using System.Windows;
 using System.Windows.Input;
 using ViewModel;
-using System.Data;
-using Model.RobotActions;
-using Model.ArduinoServices;
-using Model.Services;
 namespace RobotProgrammer.ViewModel;
 
 public class MainVM: INotifyPropertyChanged
 {
     private readonly IFileDialogService _fileDialog;
-    private RobotAction _selectedAction;
+    private RobotAction? _selectedAction;
     private IWindowService _windowService;
     private string _previewCode;
     public ObservableCollection<RobotAction> Actions { get; } = new();
@@ -33,13 +34,17 @@ public class MainVM: INotifyPropertyChanged
     public ICommand NewTemplateCommand { get; }
     public ICommand LoadTemplateCommand { get; }
     public ICommand EditTemplateCommand { get; }
-
+    public ICommand AddLoopCommand { get; }
+    public ICommand AddConditionalCommand { get; }
+    public ICommand DeleteSelectedCommand { get; }
+    public ICommand CopySelectedCommand { get; }
+    public ICommand PasteSelectedCommand { get; }
     private readonly ArduinoCodeGenerator _generator = new();
     private readonly ArduinoCliService _cli = new();
 
     // Лог для UI
     public ObservableCollection<string> Log { get; } = new();
-
+    private RobotAction _clipboard;
     public string LogString => string.Join(Environment.NewLine, Log);
 
     private void AddLog(string message)
@@ -63,8 +68,12 @@ public class MainVM: INotifyPropertyChanged
         NewTemplateCommand = new RelayCommand(OpenNewTemplateWindow);
         LoadTemplateCommand = new RelayCommand(OpenTemplatePicker);
         EditTemplateCommand = new RelayCommand(EditTemplate);
-        _dialogService = dialogService;
+        AddLoopCommand = new RelayCommand(AddLoop);
+        AddConditionalCommand = new RelayCommand(AddConditional);
         Actions = new ObservableCollection<RobotAction>();
+        DeleteSelectedCommand = new RelayCommand(DeleteSelected);
+        CopySelectedCommand = new RelayCommand(CopySelected);
+        PasteSelectedCommand = new RelayCommand(PasteSelected);
     }
     private void SaveAsProject()
     {
@@ -158,7 +167,7 @@ public class MainVM: INotifyPropertyChanged
         }
     }
     
-    public RobotAction SelectedAction
+    public RobotAction? SelectedAction
     {
         get => _selectedAction;
         set
@@ -248,11 +257,137 @@ public class MainVM: INotifyPropertyChanged
         set { _previewCode = value; OnPropertyChanged(nameof(PreviewCode)); }
     }
 
-    private void UpdatePreview()
+    public void UpdatePreview()
     {
         PreviewCode = _generator.GenerateCode(Actions);
     }
 
+    private void AddLoop()
+    {
+        var loop = new LoopAction { RepeatCount = 2 };
+        Actions.Add(loop);
+        AddLog("Добавлен цикл x2");
+        UpdatePreview();
+    }
 
+    private void AddConditional()
+    {
+        var cond = new ConditionalAction { Condition = "true" };
+        Actions.Add(cond);
+        AddLog("Добавлено условие");
+        UpdatePreview();
+    }
+    private void RemoveFromParent(RobotAction action)
+    {
+        if (action.Parent != null)
+            action.Parent.Children.Remove(action);
+        else
+            Actions.Remove(action);
+    }
+    private RobotAction CloneAction(RobotAction action)
+    {
+        if (action is LoopAction loop)
+        {
+            var copy = new LoopAction { RepeatCount = loop.RepeatCount };
+            foreach (var child in loop.Children)
+                copy.Children.Add(CloneAction(child));
+            return copy;
+        }
+        else if (action is ConditionalAction cond)
+        {
+            var copy = new ConditionalAction { Condition = cond.Condition };
+            foreach (var child in cond.Children)
+                copy.Children.Add(CloneAction(child));
+            return copy;
+        }
+        else if (action is CustomAction custom)
+        {
+            var copy = new CustomAction
+            {
+                TemplateName = custom.TemplateName,
+                TemplateCode = custom.TemplateCode
+            };
+
+            foreach (var p in custom.Parameters)
+                copy.Parameters.Add(new ParameterItem
+                {
+                    Name = p.Name,
+                    Value = p.Value
+                });
+
+            return copy;
+        }
+        else if (action is MoveAction move)
+        {
+            var copy = new MoveAction();
+            foreach (var p in move.Parameters)
+                //  copy.Parameters.Add(new ParameterItem
+                //  {
+                //      Name = p.Name,
+                //      Value = p.Value
+                //   });
+                return copy;
+        }
+        else if (action is WaitAction wait)
+        {
+            var copy = new WaitAction();
+            foreach (var p in wait.Parameters)
+                //  copy.Parameters.Add(new ParameterItem {   Name = p.Name,Value = p.Value });
+                return copy;
+        }
+
+        return null;
+    }
+    private void DeleteSelected()
+    {
+        if (SelectedAction != null)
+        {
+            RemoveFromParent(SelectedAction); // удаляем из дерева или корневого списка
+            SelectedAction = null;
+            UpdatePreview();
+        }
+    }
+
+    private void CopySelected()
+    {
+        if (SelectedAction != null)
+            _clipboard = CloneAction(SelectedAction); // глубокое копирование
+    }
+
+    private void PasteSelected()
+    {
+        if (_clipboard == null) return;
+
+        if (SelectedAction is ContainerAction container)
+        {
+            var copy = CloneAction(_clipboard);
+            container.Children.Add(copy);
+            copy.Parent = container;
+        }
+        else if (SelectedAction != null)
+        {
+            var copy = CloneAction(_clipboard);
+            if (SelectedAction.Parent != null)
+            {
+                int index = SelectedAction.Parent.Children.IndexOf(SelectedAction);
+                SelectedAction.Parent.Children.Insert(index + 1, copy);
+                copy.Parent = SelectedAction.Parent;
+            }
+            else
+            {
+                Actions.Add(copy);
+                copy.Parent = null;
+            }
+        }
+        else
+        {
+            var copy = CloneAction(_clipboard);
+            Actions.Add(copy);
+            copy.Parent = null;
+        }
+
+        UpdatePreview();
+    }
+    
 }
 
