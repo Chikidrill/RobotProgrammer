@@ -4,486 +4,854 @@
         xmlns:actions="clr-namespace:Model.RobotActions;assembly=Model"
         xmlns:model="clr-namespace:Model;assembly=Model"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        Title="Robot Programmer" Height="450" Width="800"
+        Title="Robot Programmer"
+        Height="720"
+        Width="1180"
+        MinHeight="600"
+        MinWidth="950"
+        Background="#F3F5F8"
         Icon="/Resources/icon.png"
-        >
-    <Window.Resources>
-        <ObjectDataProvider x:Key="VariableTypeValues"
-                    MethodName="GetValues"
-                    ObjectType="{x:Type sys:Enum}">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="model:ProgramVariableType"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-    </Window.Resources>
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <!-- Панель кнопок -->
-            <RowDefinition Height="Auto"/>
-            <!-- Таблица + редактор -->
-            <RowDefinition Height="*"/>
-            <!-- Лог -->
-            <RowDefinition Height="150"/>
-        </Grid.RowDefinitions>
+        FontFamily="Segoe UI"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
 
-        <!-- Панель кнопок -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <Menu Margin="0,0,10,0" BorderThickness="1" BorderBrush="Gray">
-                <MenuItem Header="Файл">
-                    <MenuItem Header="Сохранить как..."  Command="{Binding SaveAsProjectCommand}" />
-                    <MenuItem Header="Открыть проект..." Command="{Binding OpenProjectCommand}" />
-                </MenuItem>
-            </Menu>
-            <Menu Margin="0,0,10,0" BorderThickness="1" BorderBrush="Gray">
-                <MenuItem Header="Добавить действие" >
-                    <MenuItem Header="Автономный период" >
-                        <MenuItem Header="Добавить движение" Command="{Binding AddMoveCommand}" />
-                        <MenuItem Header="Добавить паузу" Command="{Binding AddWaitCommand}" />
-                        <MenuItem Header="Добавить цикл" Command="{Binding AddLoopCommand}" />
-                        <MenuItem Header="Добавить условие" Command="{Binding AddConditionalCommand}" />
-                    </MenuItem>
-                    <MenuItem Header="Телеуправляемый период">
-                        
-                    </MenuItem>
-                </MenuItem>
-            </Menu>
-
-            <Menu Margin="0,0,10,0" BorderThickness="1" BorderBrush="Gray">
-                <MenuItem Header="Шаблон">
-                    <MenuItem Header="Новый шаблон" Command="{Binding NewTemplateCommand}" />
-                    <MenuItem Header="Загрузить шаблон"  Command="{Binding LoadTemplateCommand}" />
-                    <MenuItem Header="Редактировать шаблон" Command="{Binding EditTemplateCommand}" />
-                </MenuItem>
-            </Menu>
-            <Menu BorderThickness="1" BorderBrush="Gray">
-                <MenuItem Header="Программа">
-                    <MenuItem Header="Компилировать" Command="{Binding CompileCommand}" />
-                    <MenuItem Header="Загрузить" Command="{Binding UploadCommand}" />
-                </MenuItem>
-            </Menu>
-        </StackPanel>
-
-
-        <!-- Основная рабочая зона: таблица действий + редактор -->
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <!-- Таблица действий -->
-                <ColumnDefinition Width="*"/>
-                <!-- Редактор выбранного действия -->
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- Таблица действий -->
-            <TabControl Grid.Row="1" SelectedIndex="{Binding ActiveTabIndex, Mode=TwoWay}">
-                <TabItem Header="Variables">
-                    <Grid Margin="5">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <Button Content="Добавить"
-                        Width="90"
-                        Margin="0,0,5,0"
-                        Command="{Binding AddVariableCommand}"/>
-
-                            <Button Content="Удалить"
-                        Width="90"
-                        Command="{Binding DeleteVariableCommand}"/>
-                        </StackPanel>
-
-                        <DataGrid Grid.Row="1"
-                      ItemsSource="{Binding Variables}"
-                      SelectedItem="{Binding SelectedVariable}"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False">
-
-                            <DataGrid.Columns>
-
-                                <DataGridComboBoxColumn Header="Тип"
-                                            SelectedItemBinding="{Binding Type, Mode=TwoWay}"
-                                           ItemsSource="{Binding Source={StaticResource VariableTypeValues}}"
-                                            Width="90"/>
-
-                                <DataGridTextColumn Header="Название"
-                                        Binding="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="*"/>
-
-                                <DataGridTextColumn Header="Значение"
-                                        Binding="{Binding DefaultValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="*"/>
-
-                                <DataGridCheckBoxColumn Header="const"
-                                            Binding="{Binding IsConstant, Mode=TwoWay}"
-                                            Width="60"/>
-
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Grid>
-                </TabItem>
-                <TabItem Header="Setup">
-                    <Grid Margin="5">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0"
-                   Text="Setup выполняется один раз при запуске робота. Используй его для инициализации."
-                   TextWrapping="Wrap"
-                   Foreground="Gray"
-                   Margin="0,0,0,5"/>
-
-                        <TreeView x:Name="SetupActionsTree"
-                  Grid.Row="1"
-                  ItemsSource="{Binding Actions}"
-                  SelectedItemChanged="Tree_SelectedItemChanged"
-                  AllowDrop="True"
-                  PreviewMouseLeftButtonDown="Tree_PreviewMouseLeftButtonDown"
-                  MouseMove="Tree_MouseMove"
-                  DragOver="Tree_DragOver"
-                  Drop="Tree_Drop">
-
-                            <TreeView.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Удалить" Command="{Binding DeleteSelectedCommand}" />
-                                    <MenuItem Header="Копировать" Command="{Binding CopySelectedCommand}" />
-                                    <MenuItem Header="Вставить" Command="{Binding PasteSelectedCommand}" />
-                                </ContextMenu>
-                            </TreeView.ContextMenu>
-
-                            <TreeView.Resources>
-                                <Style TargetType="TreeViewItem">
-                                    <Setter Property="Margin" Value="2"/>
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="TreeViewItem">
-                                                <DockPanel>
-                                                    <Border x:Name="Bd"
-                                            BorderBrush="Gray"
-                                            BorderThickness="1"
-                                            Background="#FFEFEFEF"
-                                            CornerRadius="4"
-                                            Padding="5"
-                                            Margin="0,0,0,2"
-                                            DockPanel.Dock="Top">
-
-                                                        <ContentPresenter x:Name="PART_Header"
-                                                          ContentSource="Header"/>
-                                                    </Border>
-
-                                                    <ItemsPresenter x:Name="ItemsHost"
-                                                    Margin="20,2,0,2"/>
-                                                </DockPanel>
-
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsSelected" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="#FFBEE6FD"/>
-                                                        <Setter TargetName="Bd" Property="BorderBrush" Value="#FF3C7FB1"/>
-                                                    </Trigger>
-
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="#FFD9F1FF"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-
-                                <HierarchicalDataTemplate DataType="{x:Type actions:ContainerAction}"
-                                          ItemsSource="{Binding Children}">
-                                    <TextBlock Text="{Binding DisplayType}"
-                               FontWeight="Bold"
-                               Foreground="#333"/>
-                                </HierarchicalDataTemplate>
-
-                                <DataTemplate DataType="{x:Type actions:RobotAction}">
-                                    <TextBlock Text="{Binding DisplayType}"
-                               Foreground="#444"/>
-                                </DataTemplate>
-                            </TreeView.Resources>
-                        </TreeView>
-                    </Grid>
-                </TabItem>
-                <TabItem Header="Autonomous">
-                    <Grid>
-                        <TreeView x:Name="ActionsTree"
-                      ItemsSource="{Binding Actions}"
-                      SelectedItemChanged="Tree_SelectedItemChanged"
-                      AllowDrop="True"
-                      PreviewMouseLeftButtonDown="Tree_PreviewMouseLeftButtonDown"
-                      MouseMove="Tree_MouseMove"
-                      DragOver="Tree_DragOver"
-                      Drop="Tree_Drop">
-                            <TreeView.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Удалить" Command="{Binding DeleteSelectedCommand}" />
-                                    <MenuItem Header="Копировать" Command="{Binding CopySelectedCommand}" />
-                                    <MenuItem Header="Вставить" Command="{Binding PasteSelectedCommand}" />
-                                </ContextMenu>
-                            </TreeView.ContextMenu>
-                            <TreeView.Resources>
-                                <!-- Общий стиль для всех TreeViewItem -->
-                                <Style TargetType="TreeViewItem">
-                                    <Setter Property="Margin" Value="2"/>
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="TreeViewItem">
-                                                <DockPanel>
-                                                    <!-- Заголовок блока -->
-                                                    <Border x:Name="Bd" BorderBrush="Gray" BorderThickness="1" Background="#FFEFEFEF" CornerRadius="4" Padding="5" Margin="0,0,0,2" DockPanel.Dock="Top">
-                                                        <ContentPresenter x:Name="PART_Header" ContentSource="Header"/>
-                                                    </Border>
-                                                    <!-- Дочерние элементы -->
-                                                    <ItemsPresenter x:Name="ItemsHost" Margin="20,2,0,2"/>
-                                                </DockPanel>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsSelected" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="#FFBEE6FD"/>
-                                                        <Setter TargetName="Bd" Property="BorderBrush" Value="#FF3C7FB1"/>
-                                                    </Trigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="#FFD9F1FF"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                                <!-- HierarchicalDataTemplate для контейнеров -->
-                                <HierarchicalDataTemplate DataType="{x:Type actions:ContainerAction}" ItemsSource="{Binding Children}">
-                                    <TextBlock Text="{Binding DisplayType}" FontWeight="Bold" Foreground="#333"/>
-                                </HierarchicalDataTemplate>
-                                <!-- DataTemplate для обычных действий -->
-                                <DataTemplate DataType="{x:Type actions:RobotAction}">
-                                    <TextBlock Text="{Binding DisplayType}" Foreground="#444"/>
-                                </DataTemplate>
-                            </TreeView.Resources>
-                        </TreeView>
-                    </Grid>
-                </TabItem>
-                <TabItem Header="Teleop">
-                    <Grid>
-                        <TreeView x:Name="ActionsTreeTeleop"
-                      ItemsSource="{Binding Actions}"
-                      SelectedItemChanged="Tree_SelectedItemChanged"
-                      AllowDrop="True"
-                      PreviewMouseLeftButtonDown="Tree_PreviewMouseLeftButtonDown"
-                      MouseMove="Tree_MouseMove"
-                      DragOver="Tree_DragOver"
-                      Drop="Tree_Drop">
-                            <TreeView.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Удалить" Command="{Binding DeleteSelectedCommand}" />
-                                    <MenuItem Header="Копировать" Command="{Binding CopySelectedCommand}" />
-                                    <MenuItem Header="Вставить" Command="{Binding PasteSelectedCommand}" />
-                                </ContextMenu>
-                            </TreeView.ContextMenu>
-                            <TreeView.Resources>
-                                <!-- Общий стиль для всех TreeViewItem -->
-                                <Style TargetType="TreeViewItem">
-                                    <Setter Property="Margin" Value="2"/>
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="TreeViewItem">
-                                                <DockPanel>
-                                                    <!-- Заголовок блока -->
-                                                    <Border x:Name="Bd" BorderBrush="Gray" BorderThickness="1" Background="#FFEFEFEF" CornerRadius="4" Padding="5" Margin="0,0,0,2" DockPanel.Dock="Top">
-                                                        <ContentPresenter x:Name="PART_Header" ContentSource="Header"/>
-                                                    </Border>
-                                                    <!-- Дочерние элементы -->
-                                                    <ItemsPresenter x:Name="ItemsHost" Margin="20,2,0,2"/>
-                                                </DockPanel>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsSelected" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="#FFBEE6FD"/>
-                                                        <Setter TargetName="Bd" Property="BorderBrush" Value="#FF3C7FB1"/>
-                                                    </Trigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="#FFD9F1FF"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                                <!-- HierarchicalDataTemplate для контейнеров -->
-                                <HierarchicalDataTemplate DataType="{x:Type actions:ContainerAction}" ItemsSource="{Binding Children}">
-                                    <TextBlock Text="{Binding DisplayType}" FontWeight="Bold" Foreground="#333"/>
-                                </HierarchicalDataTemplate>
-                                <!-- DataTemplate для обычных действий -->
-                                <DataTemplate DataType="{x:Type actions:RobotAction}">
-                                    <TextBlock Text="{Binding DisplayType}" Foreground="#444"/>
-                                </DataTemplate>
-                            </TreeView.Resources>
-                        </TreeView>
-                    </Grid>
-                </TabItem>
-            </TabControl>
-
-            <!-- Редактор выбранного действия -->
-            <Border Grid.Column="1" Padding="10" BorderBrush="Gray" BorderThickness="1">
-
-                <ContentControl Content="{Binding SelectedAction}">
-                    <ContentControl.Resources>
-                        <!-- Шаблон для MoveAction -->
-                        <DataTemplate DataType="{x:Type actions:MoveAction}">
-                            <StackPanel>
-                                <TextBlock Text="Параметры движения:" FontWeight="Bold" Margin="0,0,0,5"/>
-                                <ItemsControl ItemsSource="{Binding Parameters}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                                                <TextBlock Text="{Binding Name}" Width="80"/>
-                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </DataTemplate>
-
-                        <!-- Шаблон для WaitAction -->
-                        <DataTemplate DataType="{x:Type actions:WaitAction}">
-                            <StackPanel>
-                                <TextBlock Text="Параметры паузы:" FontWeight="Bold" Margin="0,0,0,5"/>
-                                <ItemsControl ItemsSource="{Binding Parameters}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                                                <TextBlock Text="{Binding Name}" Width="80"/>
-                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </DataTemplate>
-                        <!-- Шаблон для CustomAction -->
-                        <DataTemplate DataType="{x:Type actions:CustomAction}">
-                            <StackPanel>
-                                <TextBlock Text="Пользовательский шаблон"/>
-                                <TextBlock Text="Имя:"/>
-                                <TextBox Text="{Binding TemplateName}" IsReadOnly="True" Margin="0,0,0,5"/>
-                                <TextBlock Text="Код:"/>
-                                <TextBox Text="{Binding TemplateCode}" IsReadOnly="True" AcceptsReturn="True" Margin="0,0,0,5"/>
-
-                                <TextBlock Text="Параметры:"/>
-                                <ItemsControl ItemsSource="{Binding Parameters}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Name}" Width="80"/>
-                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50" IsReadOnly="False"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </DataTemplate>
-                        <DataTemplate DataType="{x:Type actions:LoopAction}">
-                            <StackPanel>
-                                <TextBlock Text="Цикл"/>
-                                <TextBlock Text="Повторов:"/>
-                                <TextBox Text="{Binding RepeatCount, Mode=TwoWay}" Width="50"/>
-                                <TextBlock Text="Действия внутри цикла:"/>
-                                <ItemsControl ItemsSource="{Binding Children}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding DisplayType}"/>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </DataTemplate>
-
-                        <!-- Условие -->
-                        <DataTemplate DataType="{x:Type actions:ConditionalAction}">
-                            <StackPanel>
-                                <TextBlock Text="Условие" FontWeight="Bold"/>
-
-                                <TextBlock Text="Выражение:"/>
-                                <TextBox Text="{Binding Condition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                 Width="180"
-                 Margin="0,0,0,10"/>
-
-                                <TextBlock Text="Ветки условия:" FontWeight="Bold"/>
-
-                                <ItemsControl ItemsSource="{Binding Children}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border BorderBrush="Gray"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="5"
-                            Margin="0,4,0,4">
-                                                <StackPanel>
-                                                    <TextBlock Text="{Binding DisplayType}"
-                                       FontWeight="Bold"/>
-
-                                                    <ItemsControl ItemsSource="{Binding Children}">
-                                                        <ItemsControl.ItemTemplate>
-                                                            <DataTemplate>
-                                                                <TextBlock Text="{Binding DisplayType}"
-                                                   Margin="10,2,0,2"/>
-                                                            </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
-                                                </StackPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </DataTemplate>
-
-                        <DataTemplate DataType="{x:Type actions:BranchAction}">
-                            <StackPanel>
-                                <TextBlock Text="{Binding DisplayType}" FontWeight="Bold"/>
-                                <TextBlock Text="Это ветка условия. Перетащи сюда действия." Margin="0,5,0,5"/>
-
-                                <ItemsControl ItemsSource="{Binding Children}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding DisplayType}" Margin="10,2,0,2"/>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ContentControl.Resources>
-                </ContentControl>
-            </Border>
-            <GridSplitter HorizontalAlignment="Left" Height="224" Margin="510,10,0,0" VerticalAlignment="Top" Width="5"/>
-
-        </Grid>
-
-
-        <!-- Лог -->
-
-        <TabControl Grid.Row="2">
-            <TabItem Header="Лог">
-                <TextBox Text="{Binding LogString, Mode=OneWay}" 
-                     IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
-            </TabItem>
-            <TabItem Header="Предварительный код">
-                <TextBox Text="{Binding PreviewCode, Mode=OneWay}" 
-                     IsReadOnly="True" FontFamily="Consolas" TextWrapping="NoWrap" HorizontalScrollBarVisibility="Auto"/>
-            </TabItem>
-        </TabControl>
-
-    </Grid>
     <Window.InputBindings>
         <KeyBinding Key="Delete" Command="{Binding DeleteSelectedCommand}" />
         <KeyBinding Modifiers="Control" Key="C" Command="{Binding CopySelectedCommand}" />
         <KeyBinding Modifiers="Control" Key="V" Command="{Binding PasteSelectedCommand}" />
     </Window.InputBindings>
+
+    <Window.Resources>
+
+        <!-- ===== Enum values ===== -->
+        <ObjectDataProvider x:Key="VariableTypeValues"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="model:ProgramVariableType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <!-- ===== Brushes ===== -->
+        <SolidColorBrush x:Key="AppBgBrush" Color="#F3F5F8"/>
+        <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="BorderBrushSoft" Color="#D7DDE7"/>
+        <SolidColorBrush x:Key="TextMainBrush" Color="#1F2937"/>
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#6B7280"/>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#2563EB"/>
+        <SolidColorBrush x:Key="PrimaryLightBrush" Color="#DBEAFE"/>
+        <SolidColorBrush x:Key="TreeItemBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TreeItemHoverBrush" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="TreeItemSelectedBrush" Color="#DBEAFE"/>
+
+        <!-- ===== Common styles ===== -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="RowHeaderWidth" Value="0"/>
+            <Setter Property="AlternatingRowBackground" Value="#F9FAFB"/>
+        </Style>
+
+        <!-- ===== Top menu ===== -->
+        <!-- ===== Top menu button wrapper ===== -->
+        <Style x:Key="TopMenuButtonBorderStyle" TargetType="Border">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="MinWidth" Value="110"/>
+            <Setter Property="Margin" Value="0,0,8,10"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="9"/>
+        </Style>
+
+        <!-- ===== Top menu itself ===== -->
+        <Style x:Key="TopMenuStyle" TargetType="Menu">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <!-- ===== Only first-level menu buttons ===== -->
+        <Style x:Key="TopLevelMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="120"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+
+            <Setter Property="HeaderTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Grid MinWidth="110"
+                      Height="34">
+                            <TextBlock Text="{Binding}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center"
+                               Margin="12,0"/>
+                        </Grid>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== Navigation tabs ===== -->
+        <Style x:Key="SideTabControlStyle" TargetType="TabControl">
+            <Setter Property="TabStripPlacement" Value="Left"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <Style x:Key="SideTabItemStyle" TargetType="TabItem">
+            <Setter Property="Width" Value="145"/>
+            <Setter Property="MinHeight" Value="42"/>
+            <Setter Property="Padding" Value="12,8"/>
+            
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="0,0,0,4">
+                            <ContentPresenter ContentSource="Header"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource PrimaryLightBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#EFF6FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== Action tree item template ===== -->
+        <Style x:Key="ActionTreeItemStyle" TargetType="TreeViewItem">
+            <Setter Property="Margin" Value="0,2,0,2"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" LastChildFill="True">
+
+                                <ToggleButton x:Name="Expander"
+                                              Width="18"
+                                              Height="24"
+                                              Margin="0,0,4,0"
+                                              Content="▾"
+                                              FontSize="11"
+                                              BorderBrush="{StaticResource PrimaryBrush}"
+                                              Foreground="{StaticResource PrimaryBrush}"
+                                              Background="Transparent"
+                                              BorderThickness="1"
+                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                              DockPanel.Dock="Left"/>
+
+                                <Border x:Name="Bd"
+                                        Background="{StaticResource TreeItemBrush}"
+                                        BorderBrush="{StaticResource BorderBrushSoft}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="8,6">
+                                    <ContentPresenter x:Name="PART_Header"
+                                                      ContentSource="Header"/>
+                                </Border>
+                            </DockPanel>
+
+                            <ItemsPresenter x:Name="ItemsHost"
+                                            Grid.Row="1"
+                                            Margin="28,4,0,0"/>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                            </Trigger>
+
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="Expander" Property="Content" Value="▸"/>
+                            </Trigger>
+
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource TreeItemSelectedBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource TreeItemHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== Action tree style ===== -->
+        <Style x:Key="ActionTreeStyle" TargetType="TreeView">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="AllowDrop" Value="True"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource ActionTreeItemStyle}"/>
+
+            <Setter Property="ContextMenu">
+                <Setter.Value>
+                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                        <MenuItem Header="Удалить" Command="{Binding DeleteSelectedCommand}" InputGestureText="Del"/>
+                        <MenuItem Header="Копировать" Command="{Binding CopySelectedCommand}" InputGestureText="Ctrl+C"/>
+                        <MenuItem Header="Вставить" Command="{Binding PasteSelectedCommand}" InputGestureText="Ctrl+V"/>
+                    </ContextMenu>
+                </Setter.Value>
+            </Setter>
+
+            <EventSetter Event="SelectedItemChanged" Handler="Tree_SelectedItemChanged"/>
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Tree_PreviewMouseLeftButtonDown"/>
+            <EventSetter Event="MouseMove" Handler="Tree_MouseMove"/>
+            <EventSetter Event="DragOver" Handler="Tree_DragOver"/>
+            <EventSetter Event="Drop" Handler="Tree_Drop"/>
+        </Style>
+        <!-- ===== Bottom output tabs ===== -->
+        <Style x:Key="OutputTabControlStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <Style x:Key="OutputTabItemStyle" TargetType="TabItem">
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="Margin" Value="0,0,0,0"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Bd"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="7,7,0,0"
+                        Padding="{TemplateBinding Padding}"
+                                Margin="0,4,4,0">
+                            <ContentPresenter ContentSource="Header"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FFFFFF"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="OutputTextBoxStyle" TargetType="TextBox">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+
+        <Style x:Key="CodeOutputTextBoxStyle"
+       TargetType="TextBox"
+       BasedOn="{StaticResource OutputTextBoxStyle}">
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+        </Style>
+        
+        <!-- Tree templates -->
+        <HierarchicalDataTemplate DataType="{x:Type actions:ContainerAction}"
+                                  ItemsSource="{Binding Children}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="▣"
+                           Foreground="{StaticResource PrimaryBrush}"
+                           Margin="0,0,6,0"/>
+                <TextBlock Text="{Binding DisplayType}"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMainBrush}"/>
+            </StackPanel>
+        </HierarchicalDataTemplate>
+
+        <DataTemplate DataType="{x:Type actions:RobotAction}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="●"
+                           Foreground="#64748B"
+                           Margin="0,0,6,0"/>
+                <TextBlock Text="{Binding DisplayType}"
+                           Foreground="{StaticResource TextMainBrush}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- ===== Tree host panel ===== -->
+        <Style x:Key="TreeHostBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="#FAFBFC"/>
+            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="8"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="6"/>
+            <RowDefinition Height="190"/>
+        </Grid.RowDefinitions>
+
+        <!-- ===== Top toolbar ===== -->
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+
+            <Border Style="{StaticResource TopMenuButtonBorderStyle}" >
+                <Menu Style="{StaticResource TopMenuStyle}">
+                    <MenuItem Header="Файл"
+                      Style="{StaticResource TopLevelMenuItemStyle}">
+                        <MenuItem Header="Сохранить как..."
+                          Command="{Binding SaveAsProjectCommand}" />
+                        <MenuItem Header="Открыть проект..."
+                          Command="{Binding OpenProjectCommand}" />
+                    </MenuItem>
+                </Menu>
+            </Border>
+
+            <Border Style="{StaticResource TopMenuButtonBorderStyle}">
+                <Menu Style="{StaticResource TopMenuStyle}">
+                    <MenuItem Header="Добавить действие"
+                      Style="{StaticResource TopLevelMenuItemStyle}">
+                        <MenuItem Header="Добавить движение"
+                          Command="{Binding AddMoveCommand}" />
+                        <MenuItem Header="Добавить паузу"
+                          Command="{Binding AddWaitCommand}" />
+                        <MenuItem Header="Добавить цикл"
+                          Command="{Binding AddLoopCommand}" />
+                        <MenuItem Header="Добавить условие"
+                          Command="{Binding AddConditionalCommand}" />
+                    </MenuItem>
+                </Menu>
+            </Border>
+
+            <Border Style="{StaticResource TopMenuButtonBorderStyle}">
+                <Menu Style="{StaticResource TopMenuStyle}">
+                    <MenuItem Header="Шаблон"
+                      Style="{StaticResource TopLevelMenuItemStyle}">
+                        <MenuItem Header="Новый шаблон"
+                          Command="{Binding NewTemplateCommand}" />
+                        <MenuItem Header="Загрузить шаблон"
+                          Command="{Binding LoadTemplateCommand}" />
+                        <MenuItem Header="Редактировать шаблон"
+                          Command="{Binding EditTemplateCommand}" />
+                    </MenuItem>
+                </Menu>
+            </Border>
+
+            <Border Style="{StaticResource TopMenuButtonBorderStyle}">
+                <Menu Style="{StaticResource TopMenuStyle}">
+                    <MenuItem Header="Программа"
+                      Style="{StaticResource TopLevelMenuItemStyle}">
+                        <MenuItem Header="Компилировать"
+                          Command="{Binding CompileCommand}" />
+                        <MenuItem Header="Загрузить"
+                          Command="{Binding UploadCommand}" />
+                    </MenuItem>
+                </Menu>
+            </Border>
+
+        </StackPanel>
+
+        <!-- ===== Main working area ===== -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2.2*"
+                                  MinWidth="430"/>
+                <ColumnDefinition Width="6"/>
+                <ColumnDefinition Width="1.3*"
+                                  MinWidth="280"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left panel -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource CardBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="10">
+
+                <TabControl SelectedIndex="{Binding ActiveTabIndex, Mode=TwoWay}"
+                            Style="{StaticResource SideTabControlStyle}"
+                            ItemContainerStyle="{StaticResource SideTabItemStyle}">
+
+                    <!-- ===== Variables ===== -->
+                    <TabItem Header="Variables">
+                        <Grid Margin="10,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                                    <Button Content="Добавить"
+                                            Width="95"
+                                            Command="{Binding AddVariableCommand}"/>
+
+                                    <Button Content="Удалить"
+                                            Width="95"
+                                            Command="{Binding DeleteVariableCommand}"/>
+                                </StackPanel>
+
+                                <TextBlock Text="Константы и переменные"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
+                            </DockPanel>
+
+                            <DataGrid Grid.Row="1"
+                                      ItemsSource="{Binding Variables}"
+                                      SelectedItem="{Binding SelectedVariable}"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False">
+
+                                <DataGrid.Columns>
+                                    <DataGridComboBoxColumn Header="Тип"
+                                                            SelectedItemBinding="{Binding Type, Mode=TwoWay}"
+                                                            ItemsSource="{Binding Source={StaticResource VariableTypeValues}}"
+                                                            Width="95"/>
+
+                                    <DataGridTextColumn Header="Название"
+                                                        Binding="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Значение"
+                                                        Binding="{Binding DefaultValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        Width="*"/>
+
+                                    <DataGridCheckBoxColumn Header="const"
+                                                            Binding="{Binding IsConstant, Mode=TwoWay}"
+                                                            Width="65"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </TabItem>
+
+                    <!-- ===== Setup ===== -->
+                   <TabItem Header="Setup">
+    <Grid Margin="10,0,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Background="#F8FAFC"
+                BorderBrush="{StaticResource BorderBrushSoft}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="8"
+                Margin="0,0,0,8">
+            <TextBlock Text="Setup выполняется один раз при запуске робота. Используй его для инициализации: энкодеры, сервоприводы, deadzone, стартовые состояния."
+                       TextWrapping="Wrap"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+        </Border>
+
+        <Border Grid.Row="1"
+                Style="{StaticResource TreeHostBorderStyle}">
+            <TreeView Style="{StaticResource ActionTreeStyle}"
+                      ItemsSource="{Binding Actions}"/>
+        </Border>
+    </Grid>
+</TabItem>
+
+                    <!-- ===== Autonomous ===== -->
+                    <TabItem Header="Autonomous">
+                        <Grid Margin="10,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Background="#F8FAFC"
+                                BorderBrush="{StaticResource BorderBrushSoft}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="8"
+                                Margin="0,0,0,8">
+                                <TextBlock Text="Блок действий, которые выполняются в автономном периоде."
+                                    TextWrapping="Wrap"
+                                    Foreground="{StaticResource TextMutedBrush}"/>       
+                            </Border>
+                            <Border Grid.Row="1" Style="{StaticResource TreeHostBorderStyle}">
+                                <TreeView Style="{StaticResource ActionTreeStyle}"
+                                ItemsSource="{Binding Actions}"/>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+
+                    <!-- ===== Teleop ===== -->
+                    <TabItem Header="Teleop">
+                        <Grid Margin="10,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Background="#F8FAFC"
+                                    BorderBrush="{StaticResource BorderBrushSoft}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="8"
+                                    Margin="0,0,0,8">
+                                <TextBlock Text="Блок действий, которые выполняются в телеуправляемом периоде."
+                                    TextWrapping="Wrap"
+                                    Foreground="{StaticResource TextMutedBrush}"/>
+                            </Border>
+                            <Border Grid.Row="2" Style="{StaticResource TreeHostBorderStyle}">
+                                <TreeView Style="{StaticResource ActionTreeStyle}"
+                  ItemsSource="{Binding Actions}"/>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+
+                </TabControl>
+            </Border>
+
+            <!-- Vertical splitter -->
+            <GridSplitter Grid.Column="1"
+                          Width="6"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          Background="Transparent"/>
+
+            <!-- Right editor panel -->
+            <Border Grid.Column="2"
+                    Background="{StaticResource CardBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="12">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Редактор блока"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,10"/>
+
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+
+                        <ContentControl Content="{Binding SelectedAction}">
+                            <ContentControl.Resources>
+
+                                <!-- MoveAction -->
+                                <DataTemplate DataType="{x:Type actions:MoveAction}">
+                                    <StackPanel>
+                                        <TextBlock Text="Параметры движения"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,0,8"/>
+
+                                        <ItemsControl ItemsSource="{Binding Parameters}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="0,0,0,6">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   Width="110"
+                                                                   VerticalAlignment="Center"/>
+                                                        <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Width="90"/>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- WaitAction -->
+                                <DataTemplate DataType="{x:Type actions:WaitAction}">
+                                    <StackPanel>
+                                        <TextBlock Text="Параметры паузы"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,0,8"/>
+
+                                        <ItemsControl ItemsSource="{Binding Parameters}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="0,0,0,6">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   Width="110"
+                                                                   VerticalAlignment="Center"/>
+                                                        <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Width="90"/>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- CustomAction -->
+                                <DataTemplate DataType="{x:Type actions:CustomAction}">
+                                    <StackPanel>
+                                        <TextBlock Text="Пользовательский шаблон"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,0,8"/>
+
+                                        <TextBlock Text="Имя:"/>
+                                        <TextBox Text="{Binding TemplateName}"
+                                                 IsReadOnly="True"
+                                                 Margin="0,0,0,8"/>
+
+                                        <TextBlock Text="Код:"/>
+                                        <TextBox Text="{Binding TemplateCode}"
+                                                 IsReadOnly="True"
+                                                 AcceptsReturn="True"
+                                                 FontFamily="Consolas"
+                                                 Height="90"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 Margin="0,0,0,8"/>
+
+                                        <TextBlock Text="Параметры:"/>
+                                        <ItemsControl ItemsSource="{Binding Parameters}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="0,0,0,6">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   Width="110"
+                                                                   VerticalAlignment="Center"/>
+                                                        <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Width="90"/>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- LoopAction -->
+                                <DataTemplate DataType="{x:Type actions:LoopAction}">
+                                    <StackPanel>
+                                        <TextBlock Text="Цикл"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,0,8"/>
+
+                                        <DockPanel Margin="0,0,0,10">
+                                            <TextBlock Text="Повторов:"
+                                                       Width="110"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBox Text="{Binding RepeatCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Width="90"/>
+                                        </DockPanel>
+
+                                        <TextBlock Text="Действия внутри цикла:"
+                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                   Margin="0,0,0,4"/>
+
+                                        <ItemsControl ItemsSource="{Binding Children}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{StaticResource BorderBrushSoft}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="6"
+                                                            Padding="5"
+                                                            Margin="0,0,0,4">
+                                                        <TextBlock Text="{Binding DisplayType}"/>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- ConditionalAction -->
+                                <DataTemplate DataType="{x:Type actions:ConditionalAction}">
+                                    <StackPanel>
+                                        <TextBlock Text="Условие"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,0,8"/>
+
+                                        <TextBlock Text="Выражение:"/>
+                                        <TextBox Text="{Binding Condition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Margin="0,0,0,10"/>
+
+                                        <TextBlock Text="Ветки условия:"
+                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                   Margin="0,0,0,4"/>
+
+                                        <ItemsControl ItemsSource="{Binding Children}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{StaticResource BorderBrushSoft}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="8"
+                                                            Padding="8"
+                                                            Margin="0,0,0,6">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding DisplayType}"
+                                                                       FontWeight="SemiBold"
+                                                                       Margin="0,0,0,4"/>
+
+                                                            <ItemsControl ItemsSource="{Binding Children}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <TextBlock Text="{Binding DisplayType}"
+                                                                                   Margin="10,2,0,2"/>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- BranchAction -->
+                                <DataTemplate DataType="{x:Type actions:BranchAction}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DisplayType}"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,0,8"/>
+
+                                        <TextBlock Text="Это ветка условия. Перетащи сюда действия."
+                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,8"/>
+
+                                        <ItemsControl ItemsSource="{Binding Children}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding DisplayType}"
+                                                               Margin="10,2,0,2"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                            </ContentControl.Resources>
+                        </ContentControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Horizontal splitter -->
+        <GridSplitter Grid.Row="2"
+                      Height="6"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Background="Transparent"/>
+
+        <!-- ===== Bottom panel ===== -->
+        <Border Grid.Row="3"
+        Background="{StaticResource CardBrush}"
+        BorderBrush="{StaticResource BorderBrushSoft}"
+        BorderThickness="1"
+        CornerRadius="10"
+        Padding="8"
+        Margin="0,10,0,0">
+
+            <TabControl Style="{StaticResource OutputTabControlStyle}"
+                ItemContainerStyle="{StaticResource OutputTabItemStyle}">
+
+                <TabItem Header="Лог">
+                    <Border Background="#FFFFFF"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="1"
+                    CornerRadius="0,8,8,8">
+                        <TextBox Text="{Binding LogString, Mode=OneWay}"
+                         Style="{StaticResource OutputTextBoxStyle}"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"/>
+                    </Border>
+                </TabItem>
+
+                <TabItem Header="Предварительный код">
+                    <Border Background="#FFFFFF"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="1"
+                    CornerRadius="0,8,8,8">
+                        <TextBox Text="{Binding PreviewCode, Mode=OneWay}"
+                         Style="{StaticResource CodeOutputTextBoxStyle}"
+                         IsReadOnly="True"/>
+                    </Border>
+                </TabItem>
+
+            </TabControl>
+        </Border>
+
+    </Grid>
 </Window>
