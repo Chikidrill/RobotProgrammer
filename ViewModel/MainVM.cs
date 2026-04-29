@@ -18,21 +18,42 @@ public class MainVM: INotifyPropertyChanged
     private RobotAction? _selectedAction;
     private IWindowService _windowService;
     private string _previewCode;
-    private int _activeTabIndex;
+    private int _activeTabIndex = 2;
     public int ActiveTabIndex
     {
         get => _activeTabIndex;
         set
         {
             _activeTabIndex = value;
-            ActiveTab = value == 0 ? "Autonomous" : "Teleop";
+
+            ActiveTab = value switch
+            {
+                1 => "Setup",
+                2 => "Autonomous",
+                3 => "Teleop",
+                _ => ActiveTab
+            };
+
+            SelectedAction = null;
+
             OnPropertyChanged(nameof(ActiveTabIndex));
+            OnPropertyChanged(nameof(Actions));
         }
     }
     public ObservableCollection<RobotAction> Actions
-{
-        get => ActiveTab == "Autonomous" ? Program.Autonomous : Program.Teleop;
+    {
+        get
+        {
+            return ActiveTab switch
+            {
+                "Setup" => Program.Setup,
+                "Autonomous" => Program.Autonomous,
+                "Teleop" => Program.Teleop,
+                _ => Program.Autonomous
+            };
+        }
     }
+    public ObservableCollection<ProgramVariable> Variables { get; } = new();
     public event PropertyChangedEventHandler PropertyChanged;
     private readonly IDialogService _dialogService;
     public ObservableCollection<ActionParameter> SelectedParameters =>
@@ -54,9 +75,15 @@ public class MainVM: INotifyPropertyChanged
     public ICommand DeleteSelectedCommand { get; }
     public ICommand CopySelectedCommand { get; }
     public ICommand PasteSelectedCommand { get; }
+    public ICommand AddVariableCommand { get; }
+    public ICommand DeleteVariableCommand { get; }
+    public Array VariableTypes { get; } =
+    Enum.GetValues(typeof(ProgramVariableType));
+
     private readonly ArduinoCodeGenerator _generator = new();
     private readonly ArduinoCliService _cli = new();
     private string _activeTab = "Autonomous"; // по умолчанию
+    private ProgramVariable? _selectedVariable;
     // Лог для UI
     public ObservableCollection<string> Log { get; } = new();
     private RobotAction _clipboard;
@@ -89,6 +116,8 @@ public class MainVM: INotifyPropertyChanged
         DeleteSelectedCommand = new RelayCommand(DeleteSelected);
         CopySelectedCommand = new RelayCommand(CopySelected);
         PasteSelectedCommand = new RelayCommand(PasteSelected);
+        AddVariableCommand = new RelayCommand(AddVariable);
+        DeleteVariableCommand = new RelayCommand(DeleteVariable);
     }
     public string ActiveTab
     {
@@ -151,7 +180,11 @@ public class MainVM: INotifyPropertyChanged
         try
         {
             Directory.CreateDirectory(projectPath);
-            string code = _generator.GenerateCode(Program.Autonomous, Program.Teleop);
+            string code = _generator.GenerateCode(
+                Program.Setup,
+                Program.Autonomous,
+                Program.Teleop,
+                Variables);
             File.WriteAllText(Path.Combine(projectPath, "robot.ino"), code);
             AddLog("Код сгенерирован");
 
@@ -279,7 +312,11 @@ public class MainVM: INotifyPropertyChanged
 
     public void UpdatePreview()
     {
-        PreviewCode = _generator.GenerateCode(Program.Autonomous, Program.Teleop);
+        PreviewCode = _generator.GenerateCode(
+             Program.Setup,
+             Program.Autonomous,
+             Program.Teleop,
+             Variables);
     }
 
     private void AddLoop()
@@ -432,6 +469,39 @@ public class MainVM: INotifyPropertyChanged
 
         UpdatePreview();
     }
-    
+    public ProgramVariable? SelectedVariable
+    {
+        get => _selectedVariable;
+        set
+        {
+            _selectedVariable = value;
+            OnPropertyChanged(nameof(SelectedVariable));
+        }
+    }
+    private void AddVariable()
+    {
+        Variables.Add(new ProgramVariable
+        {
+            Type = ProgramVariableType.Int,
+            Name = "NEW_VAR",
+            DefaultValue = "0",
+            IsConstant = true
+        });
+
+        AddLog("Добавлена переменная");
+        UpdatePreview();
+    }
+
+    private void DeleteVariable()
+    {
+        if (SelectedVariable == null)
+            return;
+
+        Variables.Remove(SelectedVariable);
+        SelectedVariable = null;
+
+        AddLog("Переменная удалена");
+        UpdatePreview();
+    }
 }
 
