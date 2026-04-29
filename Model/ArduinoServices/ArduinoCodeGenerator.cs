@@ -6,12 +6,15 @@ namespace Model.ArduinoServices;
 
 public class ArduinoCodeGenerator
 {
-    public string GenerateCode(IEnumerable<RobotAction> actions)
+    public string GenerateCode(IEnumerable<RobotAction> autonomous, IEnumerable<RobotAction> teleop)
     {
-        var builder = new StringBuilder();
+        var autoBuilder = new StringBuilder();
+        foreach (var action in autonomous)
+            autoBuilder.Append(action.GenerateCode());
 
-        foreach (var action in actions)
-            builder.Append(action.GenerateCode());
+        var teleopBuilder = new StringBuilder();
+        foreach (var action in teleop)
+            teleopBuilder.Append(action.GenerateCode());
 
         return $@"
 #include <PRIZM.h>
@@ -19,19 +22,30 @@ public class ArduinoCodeGenerator
 PRIZM prizm;
 
 void setup() {{
-  prizm.PrizmBegin();
+    prizm.PrizmBegin();
 }}
 
 void loop() {{
-{builder}
-  while(true);
+    if (autoMode) {{
+        RunAutonomous();
+    }} else {{
+        RunTeleop();
+    }}
+}}
+
+void RunAutonomous() {{
+{autoBuilder}
+}}
+
+void RunTeleop() {{
+{teleopBuilder}
 }}
 ";
     }
 
-    public string SaveToFile(IEnumerable<RobotAction> actions)
+    public string SaveToFile(IEnumerable<RobotAction> autonomous, IEnumerable<RobotAction> teleop)
     {
-        string code = GenerateCode(actions);
+        string code = GenerateCode(autonomous, teleop);
 
         string folderPath = Path.Combine(
             Directory.GetCurrentDirectory(),

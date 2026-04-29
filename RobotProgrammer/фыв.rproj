@@ -1,0 +1,19 @@
+[
+  {
+    "RepeatCount": 2,
+    "ActionType": "LoopAction",
+    "Children": [
+      {
+        "Parameters": [
+          {
+            "Name": "DurationMs",
+            "Value": 500
+          }
+        ],
+        "ActionType": "WaitAction",
+        "IsContainer": false
+      }
+    ],
+    "IsContainer": true
+  }
+]

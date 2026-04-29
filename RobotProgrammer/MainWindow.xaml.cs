@@ -99,7 +99,12 @@ namespace RobotProgrammer.View
 
             RemoveFromParent(dragged);
 
-            if (target is ContainerAction container)
+            if (target is ConditionalAction condition)
+            {
+                condition.IfBranch.Children.Add(dragged);
+                dragged.Parent = condition.IfBranch;
+            }
+            else if (target is ContainerAction container)
             {
                 container.Children.Add(dragged);
                 dragged.Parent = container;
