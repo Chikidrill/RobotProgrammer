@@ -1,0 +1,59 @@
+[
+  {
+    "Condition": "true",
+    "ActionType": "ConditionalAction",
+    "Children": [
+      {
+        "BranchName": "IF",
+        "ActionType": "BranchAction",
+        "Children": [
+          {
+            "ActionType": "MoveAction",
+            "Parameters": [
+              {
+                "Name": "SpeedLeft",
+                "Value": 100
+              },
+              {
+                "Name": "SpeedRight",
+                "Value": 100
+              },
+              {
+                "Name": "DurationMs",
+                "Value": 1000
+              }
+            ],
+            "IsContainer": false
+          }
+        ],
+        "IsContainer": true
+      },
+      {
+        "BranchName": "ELSE",
+        "ActionType": "BranchAction",
+        "Children": [
+          {
+            "ActionType": "MoveAction",
+            "Parameters": [
+              {
+                "Name": "SpeedLeft",
+                "Value": 100
+              },
+              {
+                "Name": "SpeedRight",
+                "Value": 100
+              },
+              {
+                "Name": "DurationMs",
+                "Value": 1000
+              }
+            ],
+            "IsContainer": false
+          }
+        ],
+        "IsContainer": true
+      }
+    ],
+    "IsContainer": true
+  }
+]

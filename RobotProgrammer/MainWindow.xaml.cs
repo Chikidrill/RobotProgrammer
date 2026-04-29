@@ -179,6 +179,10 @@ namespace RobotProgrammer.View
 
             return null;
         }
-
+        private void EditorValue_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (DataContext is MainVM vm)
+                vm.UpdatePreview();
+        }
     }
 }
