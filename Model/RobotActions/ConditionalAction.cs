@@ -1,43 +1,113 @@
-﻿using Model.RobotActions;
-using System;
+﻿using Model.Services;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
+
 namespace Model.RobotActions;
 
 public class ConditionalAction : ContainerAction
 {
-    public override string ActionType => "If";
+    public ConditionalAction()
+    {
+        EnsureBranches();
+    }
+
     public string Condition { get; set; } = "true";
 
-    public ObservableCollection<RobotAction> TrueBranch { get; set; }
-        = new();
+    public override string ActionType => "ConditionalAction";
 
-    public ObservableCollection<RobotAction> FalseBranch { get; set; }
-        = new();
-
-    public override bool IsContainer => true;
-
+    [JsonIgnore]
     public override string DisplayType => $"Если [{Condition}]";
+
+    [JsonIgnore]
+    public BranchAction IfBranch
+    {
+        get
+        {
+            EnsureBranches();
+            return GetOrCreateBranch("IF");
+        }
+    }
+
+    [JsonIgnore]
+    public BranchAction ElseBranch
+    {
+        get
+        {
+            EnsureBranches();
+            return GetOrCreateBranch("ELSE");
+        }
+    }
+
+    private BranchAction GetOrCreateBranch(string name)
+    {
+        var branch = Children
+            .OfType<BranchAction>()
+            .FirstOrDefault(x => x.BranchName == name);
+
+        if (branch != null)
+            return branch;
+
+        branch = new BranchAction(name)
+        {
+            Parent = this
+        };
+
+        Children.Add(branch);
+        return branch;
+    }
+
+    private void EnsureBranches()
+    {
+        GetOrCreateBranch("IF");
+        GetOrCreateBranch("ELSE");
+
+        foreach (var child in Children)
+            child.Parent = this;
+    }
 
     public override string GenerateCode()
     {
-        string code = $"{{\nif({Condition}){{\n";
+        EnsureBranches();
 
-        foreach (var a in TrueBranch)
-            code += a.GenerateCode();
+        string code = $"if ({Condition}) {{\n";
+
+        foreach (var child in IfBranch.Children)
+            code += child.GenerateCode() + "\n";
 
         code += "}";
 
-        if (FalseBranch.Any())
+        if (ElseBranch.Children.Count > 0)
         {
-            code += "else{\n";
-            foreach (var a in FalseBranch)
-                code += a.GenerateCode();
+            code += " else {\n";
+
+            foreach (var child in ElseBranch.Children)
+                code += child.GenerateCode() + "\n";
+
             code += "}";
         }
 
         code += "\n";
         return code;
     }
-    public ConditionalAction(){}
+
+    public override ObservableCollection<ActionParameter> GetParameters()
+    {
+        return new ObservableCollection<ActionParameter>
+        {
+            new ActionParameter
+            {
+                Name = "Условие",
+                TextValue = Condition
+            }
+        };
+    }
+
+    public override void ApplyParameters(IEnumerable<ActionParameter> parameters)
+    {
+        foreach (var p in parameters)
+        {
+            if (p.Name == "Условие")
+                Condition = p.TextValue;
+        }
+    }
 }

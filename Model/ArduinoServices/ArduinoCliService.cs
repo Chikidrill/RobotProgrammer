@@ -2,25 +2,52 @@
 using System.Text;
 
 namespace Model.ArduinoServices;
+
 public class ArduinoCliService
 {
-    private const string ArduinoCliExe = "C:\\Users\\dvorn\\source\\repos\\RobotProgrammerApp\\Model\\arduino-cli.exe";
+    private static string ArduinoCliExe => Path.Combine(
+        AppContext.BaseDirectory, "arduino-cli.exe"
+    );
+
     public void Compile(string projectPath, Action<string> logCallback)
     {
-        Run("compile", $"--fqbn arduino:avr:uno \"{projectPath}\"", logCallback);
+        Run(
+            command: "compile",
+            logCallback: logCallback,
+            "--fqbn",
+            "arduino:avr:uno",
+            projectPath
+        );
     }
 
     public void Upload(string projectPath, string port, Action<string> logCallback)
     {
-        Run("upload", $"--fqbn arduino:avr:uno -p {port} \"{projectPath}\"", logCallback);
+        Run(
+            command: "upload",
+            logCallback: logCallback,
+            "--fqbn",
+            "arduino:avr:uno",
+            "-p",
+            port,
+            projectPath
+        );
     }
 
-    private void Run(string command, string args, Action<string> logCallback)
+    private void Run(string command, Action<string> logCallback, params string[] args)
     {
+        logCallback?.Invoke($"[CLI PATH] {ArduinoCliExe}");
+        logCallback?.Invoke($"[CLI EXISTS] {File.Exists(ArduinoCliExe)}");
+
+        if (!File.Exists(ArduinoCliExe))
+        {
+            throw new FileNotFoundException(
+                $"arduino-cli.exe не найден по пути: {ArduinoCliExe}"
+            );
+        }
+
         var psi = new ProcessStartInfo
         {
             FileName = ArduinoCliExe,
-            Arguments = $"{command} {args}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -29,7 +56,18 @@ public class ArduinoCliService
             StandardErrorEncoding = Encoding.UTF8
         };
 
-        using var process = new Process { StartInfo = psi };
+        psi.ArgumentList.Add(command);
+
+        foreach (var arg in args)
+        {
+            psi.ArgumentList.Add(arg);
+        }
+
+        using var process = new Process
+        {
+            StartInfo = psi,
+            EnableRaisingEvents = true
+        };
 
         process.OutputDataReceived += (_, e) =>
         {
@@ -43,13 +81,26 @@ public class ArduinoCliService
                 logCallback?.Invoke("[CLI ERROR] " + e.Data);
         };
 
-        process.Start();
+        try
+        {
+            process.Start();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(
+                $"Не удалось запустить arduino-cli.exe. Путь: {ArduinoCliExe}",
+                ex
+            );
+        }
+
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+
         process.WaitForExit();
 
         if (process.ExitCode != 0)
-            throw new Exception($"Процесс завершился с кодом {process.ExitCode}");
+        {
+            throw new Exception($"arduino-cli завершился с кодом {process.ExitCode}");
+        }
     }
 }
-

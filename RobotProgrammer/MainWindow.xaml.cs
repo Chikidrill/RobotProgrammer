@@ -63,7 +63,8 @@ namespace RobotProgrammer.View
             }
 
             var dragged = (RobotAction)e.Data.GetData(typeof(RobotAction));
-            var target = GetActionUnderMouse(e);
+            var tree = (TreeView)sender;
+            var target = GetActionUnderMouse(tree, e);
 
             if (target == null)
             {
@@ -92,14 +93,20 @@ namespace RobotProgrammer.View
                 return;
 
             var dragged = (RobotAction)e.Data.GetData(typeof(RobotAction));
-            var target = GetActionUnderMouse(e);
+            var tree = (TreeView)sender;
+            var target = GetActionUnderMouse(tree, e);
 
             if (dragged == target)
                 return;
 
             RemoveFromParent(dragged);
 
-            if (target is ContainerAction container)
+            if (target is ConditionalAction condition)
+            {
+                condition.IfBranch.Children.Add(dragged);
+                dragged.Parent = condition.IfBranch;
+            }
+            else if (target is ContainerAction container)
             {
                 container.Children.Add(dragged);
                 dragged.Parent = container;
@@ -157,10 +164,10 @@ namespace RobotProgrammer.View
                 }
             }
         }
-        private RobotAction? GetActionUnderMouse(DragEventArgs e)
+        private RobotAction? GetActionUnderMouse(TreeView tree, DragEventArgs e)
         {
-            var element = ActionsTree.InputHitTest(
-                e.GetPosition(ActionsTree)) as DependencyObject;
+            var element = tree.InputHitTest(
+                e.GetPosition(tree)) as DependencyObject;
 
             while (element != null)
             {
@@ -172,6 +179,6 @@ namespace RobotProgrammer.View
 
             return null;
         }
-       
+
     }
 }
