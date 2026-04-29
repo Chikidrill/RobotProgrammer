@@ -1,5 +1,6 @@
-﻿using System.Text;
-using Model.RobotActions;
+﻿using Model.RobotActions;
+using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Model.ArduinoServices;
 
@@ -8,8 +9,9 @@ public class ArduinoCodeGenerator
     public string GenerateCode(
         IEnumerable<RobotAction> setup,
         IEnumerable<RobotAction> autonomous,
-        IEnumerable<RobotAction> teleop,
-        IEnumerable<ProgramVariable> variables)
+        TeleopProgram teleop,
+        IEnumerable<ProgramVariable> variables,
+        IEnumerable<ProgramFunction> functions)
     {
         var globalsBuilder = new StringBuilder();
         foreach (var variable in variables)
@@ -24,8 +26,18 @@ public class ArduinoCodeGenerator
             autonomousBuilder.AppendLine(action.GenerateCode());
 
         var teleopBuilder = new StringBuilder();
-        foreach (var action in teleop)
+
+        teleopBuilder.AppendLine("  // Always running");
+        foreach (var action in teleop.AlwaysRunning)
             teleopBuilder.AppendLine(action.GenerateCode());
+
+        teleopBuilder.AppendLine("  // Button rules");
+        foreach (var rule in teleop.ButtonRules)
+            teleopBuilder.AppendLine(rule.GenerateCode());
+        var functionsBuilder = new StringBuilder();
+
+        foreach (var function in functions)
+            functionsBuilder.AppendLine(function.GenerateCode());
 
         return $@"
 #include <TELEOP.h>
@@ -50,7 +62,8 @@ void setup() {{
  // ===== User Setup =====
 {setupBuilder}
 }}
-
+// ===== User Functions =====
+{functionsBuilder}
 void loop() {{
   ps4.getPS4();
 
@@ -80,10 +93,11 @@ void RunTeleop() {{
     public string SaveToFile(
         IEnumerable<RobotAction> setup,
         IEnumerable<RobotAction> autonomous,
-        IEnumerable<RobotAction> teleop,
-        IEnumerable<ProgramVariable> variables)
+        TeleopProgram teleop,
+        IEnumerable<ProgramVariable> variables,
+        IEnumerable<ProgramFunction> functions)
     {
-        string code = GenerateCode(setup, autonomous, teleop, variables);
+        string code = GenerateCode(setup, autonomous, teleop, variables, functions);
 
         string folderPath = Path.Combine(
             Directory.GetCurrentDirectory(),

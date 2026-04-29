@@ -33,6 +33,13 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
 
+        <ObjectDataProvider x:Key="TriggerModeValues"
+                    MethodName="GetValues"
+                    ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="actions:TriggerMode"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
         <!-- ===== Brushes ===== -->
         <SolidColorBrush x:Key="AppBgBrush" Color="#F3F5F8"/>
         <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF"/>
@@ -504,31 +511,333 @@
 
                     <!-- ===== Setup ===== -->
                    <TabItem Header="Setup">
-    <Grid Margin="10,0,0,0">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+                        <Grid Margin="10,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
 
-        <Border Background="#F8FAFC"
-                BorderBrush="{StaticResource BorderBrushSoft}"
-                BorderThickness="1"
-                CornerRadius="8"
-                Padding="8"
-                Margin="0,0,0,8">
-            <TextBlock Text="Setup выполняется один раз при запуске робота. Используй его для инициализации: энкодеры, сервоприводы, deadzone, стартовые состояния."
-                       TextWrapping="Wrap"
-                       Foreground="{StaticResource TextMutedBrush}"/>
-        </Border>
+                            <Border Background="#F8FAFC"
+                                    BorderBrush="{StaticResource BorderBrushSoft}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="8"
+                                    Margin="0,0,0,8">
+                                <TextBlock Text="Setup выполняется один раз при запуске робота. Используй его для инициализации: энкодеры, сервоприводы, deadzone, стартовые состояния."
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
+                            </Border>
 
-        <Border Grid.Row="1"
+                            <Border Grid.Row="1"
+                                    Style="{StaticResource TreeHostBorderStyle}">
+                                <TreeView Style="{StaticResource ActionTreeStyle}"
+                                          ItemsSource="{Binding Actions}"/>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem Header="Functions">
+                        <Grid Margin="10,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.1*" MinWidth="260"/>
+                                <ColumnDefinition Width="6"/>
+                                <ColumnDefinition Width="1.8*" MinWidth="360"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- LEFT: project functions + library -->
+                            <Grid Grid.Column="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="10"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Project functions -->
+                                <Border Grid.Row="0"
+                    Style="{StaticResource TreeHostBorderStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Text="Функции проекта"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8"/>
+
+                                        <ListBox Grid.Row="1"
+                             ItemsSource="{Binding Program.Functions}"
+                             SelectedItem="{Binding SelectedFunction}"
+                             BorderThickness="0"
+                             Background="Transparent">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{StaticResource BorderBrushSoft}"
+                                        BorderThickness="1"
+                                        CornerRadius="7"
+                                        Padding="8"
+                                        Margin="0,0,0,5"
+                                        Background="#FFFFFF">
+                                                        <TextBlock Text="{Binding DisplayName}"/>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+
+                                        <WrapPanel Grid.Row="2" Margin="0,8,0,0">
+                                            <Button Content="Добавить"
+                                Width="95"
+                                Command="{Binding AddFunctionCommand}"/>
+
+                                            <Button Content="Удалить"
+                                Width="95"
+                                Command="{Binding DeleteFunctionCommand}"/>
+
+                                            <Menu Width="130"
+      Height="30"
+      Background="#FFFFFF"
+      BorderBrush="{StaticResource BorderBrushSoft}"
+      BorderThickness="1"
+      Margin="0,0,6,0">
+                                                <MenuItem Header="Вызвать в...">
+                                                    <MenuItem Header="Setup"
+                  Command="{Binding AddFunctionCallToSetupCommand}" />
+
+                                                    <MenuItem Header="Autonomous"
+                  Command="{Binding AddFunctionCallToAutonomousCommand}" />
+
+                                                    <MenuItem Header="Teleop Always"
+                  Command="{Binding AddFunctionCallToTeleopAlwaysCommand}" />
+
+                                                    <MenuItem Header="Выбранную кнопку"
+                  Command="{Binding AddFunctionCallToSelectedButtonRuleCommand}" />
+                                                </MenuItem>
+                                            </Menu>
+
+                                            <Button Content="В библиотеку"
+                                Width="115"
+                                Command="{Binding SaveFunctionToLibraryCommand}"/>
+                                        </WrapPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Library functions -->
+                                <Border Grid.Row="2"
+                    Style="{StaticResource TreeHostBorderStyle}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Text="Библиотека функций"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8"/>
+
+                                        <ListBox Grid.Row="1"
+                             ItemsSource="{Binding FunctionLibrary}"
+                             SelectedItem="{Binding SelectedLibraryFunction}"
+                             BorderThickness="0"
+                             Background="Transparent">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{StaticResource BorderBrushSoft}"
+                                        BorderThickness="1"
+                                        CornerRadius="7"
+                                        Padding="8"
+                                        Margin="0,0,0,5"
+                                        Background="#FFFFFF">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding DisplayName}"
+                                                   FontWeight="SemiBold"/>
+                                                            <TextBlock Text="user library"
+                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                   FontSize="11"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+
+                                        <StackPanel Grid.Row="2"
+            Orientation="Horizontal"
+            Margin="0,8,0,0">
+
+                                            <Button Content="В проект"
+            Width="100"
+            Command="{Binding ImportFunctionFromLibraryCommand}"/>
+
+                                            <Menu Width="150"
+      Height="30"
+      Background="#FFFFFF"
+      BorderBrush="{StaticResource BorderBrushSoft}"
+      BorderThickness="1"
+      Margin="0,8,0,0">
+                                                <MenuItem Header="В проект и вызвать">
+                                                    <MenuItem Header="Setup"
+                  Command="{Binding AddFunctionCallToSetupCommand}" />
+
+                                                    <MenuItem Header="Autonomous"
+                  Command="{Binding AddFunctionCallToAutonomousCommand}" />
+
+                                                    <MenuItem Header="Teleop Always"
+                  Command="{Binding AddFunctionCallToTeleopAlwaysCommand}" />
+
+                                                    <MenuItem Header="Выбранную кнопку"
+                  Command="{Binding AddFunctionCallToSelectedButtonRuleCommand}" />
+                                                </MenuItem>
+                                            </Menu>
+
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+
+                            <GridSplitter Grid.Column="1"
+                      Width="6"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Background="Transparent"/>
+
+                            <!-- RIGHT: editor -->
+                            <Border Grid.Column="2"
                 Style="{StaticResource TreeHostBorderStyle}">
-            <TreeView Style="{StaticResource ActionTreeStyle}"
-                      ItemsSource="{Binding Actions}"/>
-        </Border>
-    </Grid>
-</TabItem>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <Grid DataContext="{Binding SelectedFunction}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
 
+                                        <TextBlock Text="Редактор функции"
+                               FontWeight="SemiBold"
+                               FontSize="15"
+                               Margin="0,0,0,10"/>
+
+                                        <!-- Signature -->
+                                        <Grid Grid.Row="1" Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="100"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="100"/>
+                                                <ColumnDefinition Width="120"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="Имя:"
+                                   VerticalAlignment="Center"/>
+
+                                            <TextBox Grid.Column="1"
+                                 Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,0,10,0"/>
+
+                                            <TextBlock Grid.Column="2"
+                                   Text="Возврат:"
+                                   VerticalAlignment="Center"/>
+
+                                            <ComboBox Grid.Column="3"
+                                  ItemsSource="{Binding DataContext.CppTypes, RelativeSource={RelativeSource AncestorType=Window}}"
+                                  SelectedItem="{Binding ReturnType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid>
+
+                                        <!-- Parameters -->
+                                        <Border Grid.Row="2"
+                            BorderBrush="{StaticResource BorderBrushSoft}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="8"
+                            Background="#FFFFFF"
+                            Margin="0,0,0,10">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="140"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Text="Параметры"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6"/>
+
+                                                <DataGrid Grid.Row="1"
+                                      ItemsSource="{Binding Parameters}"
+                                      SelectedItem="{Binding DataContext.SelectedFunctionParameter, RelativeSource={RelativeSource AncestorType=Window}}"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False">
+
+                                                    <DataGrid.Columns>
+                                                        <DataGridTemplateColumn Header="Тип" Width="120">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding Type}"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                            <DataGridTemplateColumn.CellEditingTemplate>
+                                                                <DataTemplate>
+                                                                    <ComboBox ItemsSource="{Binding DataContext.CppTypes, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedItem="{Binding Type, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellEditingTemplate>
+                                                        </DataGridTemplateColumn>
+
+                                                        <DataGridTextColumn Header="Название"
+                                                        Binding="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        Width="*"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+
+                                                <StackPanel Grid.Row="2"
+                                        Orientation="Horizontal"
+                                        Margin="0,8,0,0">
+                                                    <Button Content="Добавить параметр"
+                                        Width="140"
+                                        Command="{Binding DataContext.AddFunctionParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+
+                                                    <Button Content="Удалить параметр"
+                                        Width="140"
+                                        Command="{Binding DataContext.DeleteFunctionParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Body -->
+                                        <Border Grid.Row="3"
+                            BorderBrush="{StaticResource BorderBrushSoft}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="8"
+                            Background="#FFFFFF">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Text="Тело функции"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6"/>
+
+                                                <TextBox Grid.Row="1"
+                                     Text="{Binding BodyCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     FontFamily="Consolas"
+                                     FontSize="13"
+                                     AcceptsReturn="True"
+                                     AcceptsTab="True"
+                                     TextWrapping="NoWrap"
+                                     MinHeight="240"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     VerticalScrollBarVisibility="Auto"/>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+                    
                     <!-- ===== Autonomous ===== -->
                     <TabItem Header="Autonomous">
                         <Grid Margin="10,0,0,0">
@@ -556,29 +865,111 @@
 
                     <!-- ===== Teleop ===== -->
                     <TabItem Header="Teleop">
-                        <Grid Margin="10,0,0,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
+                        <TabControl SelectedIndex="{Binding TeleopTabIndex, Mode=TwoWay}">
 
-                            <Border Background="#F8FAFC"
-                                    BorderBrush="{StaticResource BorderBrushSoft}"
-                                    BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="8"
-                                    Margin="0,0,0,8">
-                                <TextBlock Text="Блок действий, которые выполняются в телеуправляемом периоде."
-                                    TextWrapping="Wrap"
-                                    Foreground="{StaticResource TextMutedBrush}"/>
-                            </Border>
-                            <Border Grid.Row="2" Style="{StaticResource TreeHostBorderStyle}">
-                                <TreeView Style="{StaticResource ActionTreeStyle}"
-                  ItemsSource="{Binding Actions}"/>
-                            </Border>
-                        </Grid>
+                            <!-- ALWAYS -->
+                            <TabItem Header="Always">
+                                <Grid Margin="10,0,0,0">
+                                    <Border Style="{StaticResource TreeHostBorderStyle}">
+                                        <TreeView Style="{StaticResource ActionTreeStyle}"
+                              ItemsSource="{Binding Program.Teleop.AlwaysRunning}"/>
+                                    </Border>
+                                </Grid>
+                            </TabItem>
+
+                            <!-- BUTTON RULES -->
+                            <TabItem Header="Buttons">
+                                <Grid Margin="10,0,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <DockPanel Margin="0,0,0,8">
+                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                                            <Button Content="Добавить правило"
+                                Width="130"
+                                Command="{Binding AddButtonRuleCommand}"/>
+
+                                            <Button Content="Удалить правило"
+                                Width="130"
+                                Command="{Binding DeleteButtonRuleCommand}"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="Правила кнопок PS4"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMutedBrush}"/>
+                                    </DockPanel>
+
+                                    <Grid Grid.Row="1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1.2*"/>
+                                            <ColumnDefinition Width="6"/>
+                                            <ColumnDefinition Width="1*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- TABLE OF RULES -->
+                                        <Border Grid.Column="0"
+                            Style="{StaticResource TreeHostBorderStyle}">
+                                            <DataGrid ItemsSource="{Binding Program.Teleop.ButtonRules}"
+                                  SelectedItem="{Binding SelectedButtonRule}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False">
+                                                <DataGrid.Columns>
+
+                                                    <DataGridTemplateColumn Header="Кнопка" Width="*">
+                                                        <DataGridTemplateColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Button}"/>
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellTemplate>
+                                                        <DataGridTemplateColumn.CellEditingTemplate>
+                                                            <DataTemplate>
+                                                                <ComboBox ItemsSource="{Binding DataContext.Ps4Buttons, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      SelectedItem="{Binding Button, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellEditingTemplate>
+                                                    </DataGridTemplateColumn>
+
+                                                    <DataGridComboBoxColumn Header="Режим"
+                                                        SelectedItemBinding="{Binding TriggerMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        ItemsSource="{Binding Source={StaticResource TriggerModeValues}}"
+                                                        Width="*"/>
+
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+                                        </Border>
+
+                                        <GridSplitter Grid.Column="1"
+                                  Width="6"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  Background="Transparent"/>
+
+                                        <!-- SELECTED RULE ACTIONS -->
+                                        <Border Grid.Column="2"
+                            Style="{StaticResource TreeHostBorderStyle}">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Text="Действия выбранного правила"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+
+                                                <TreeView Grid.Row="1"
+                                      Style="{StaticResource ActionTreeStyle}"
+                                      ItemsSource="{Binding SelectedButtonRule.Children}"/>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+                            </TabItem>
+
+                        </TabControl>
                     </TabItem>
-
                 </TabControl>
             </Border>
 
@@ -614,7 +1005,41 @@
 
                         <ContentControl Content="{Binding SelectedAction}">
                             <ContentControl.Resources>
+                                <DataTemplate DataType="{x:Type actions:FunctionCallAction}">
+                                    <StackPanel>
+                                        <TextBlock Text="Вызов функции"
+                   FontWeight="Bold"
+                   Margin="0,0,0,8"/>
 
+                                        <TextBlock Text="Функция:"/>
+                                        <TextBox Text="{Binding FunctionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 IsReadOnly="True"
+                 Margin="0,0,0,10"/>
+
+                                        <TextBlock Text="Аргументы:" FontWeight="SemiBold" Margin="0,0,0,6"/>
+
+                                        <ItemsControl ItemsSource="{Binding Arguments}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="0,0,0,6">
+                                                        <TextBlock Text="{Binding Name}"
+                                   Width="110"
+                                   VerticalAlignment="Center"/>
+
+                                                        <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="140"
+                                 TextChanged="EditorValue_TextChanged"/>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <TextBlock Text="Можно вводить числа, переменные или выражения: 800, -800, MAXP, LOAD + 10"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </DataTemplate>
                                 <!-- MoveAction -->
                                 <DataTemplate DataType="{x:Type actions:MoveAction}">
                                     <StackPanel>

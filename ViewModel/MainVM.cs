@@ -18,7 +18,8 @@ public class MainVM: INotifyPropertyChanged
     private RobotAction? _selectedAction;
     private IWindowService _windowService;
     private string _previewCode;
-    private int _activeTabIndex = 2;
+    private int _activeTabIndex = 3;
+
     public int ActiveTabIndex
     {
         get => _activeTabIndex;
@@ -29,8 +30,8 @@ public class MainVM: INotifyPropertyChanged
             ActiveTab = value switch
             {
                 1 => "Setup",
-                2 => "Autonomous",
-                3 => "Teleop",
+                3 => "Autonomous",
+                4 => TeleopTabIndex == 1 ? "TeleopButtons" : "TeleopAlways",
                 _ => ActiveTab
             };
 
@@ -38,6 +39,7 @@ public class MainVM: INotifyPropertyChanged
 
             OnPropertyChanged(nameof(ActiveTabIndex));
             OnPropertyChanged(nameof(Actions));
+            OnPropertyChanged(nameof(ActiveTab));
         }
     }
     public ObservableCollection<RobotAction> Actions
@@ -48,11 +50,36 @@ public class MainVM: INotifyPropertyChanged
             {
                 "Setup" => Program.Setup,
                 "Autonomous" => Program.Autonomous,
-                "Teleop" => Program.Teleop,
+                "TeleopAlways" => Program.Teleop.AlwaysRunning,
+                "Teleop" => Program.Teleop.ButtonRules,
                 _ => Program.Autonomous
             };
         }
     }
+    public string[] Ps4Buttons { get; } =
+{
+    "L1",
+    "L2",
+    "L3",
+    "R1",
+    "R2",
+    "R3",
+    "UP",
+    "DOWN",
+    "RIGHT",
+    "LEFT",
+    "TRIANGLE",
+    "CROSS",
+    "CIRCLE",
+    "SQUARE",
+    "SHARE",
+    "OPTIONS",
+    "POWER",
+    "TOUCH"
+};
+
+    public Array TriggerModes { get; } =
+        Enum.GetValues(typeof(TriggerMode));
     public ObservableCollection<ProgramVariable> Variables { get; } = new();
     public event PropertyChangedEventHandler PropertyChanged;
     private readonly IDialogService _dialogService;
@@ -77,6 +104,19 @@ public class MainVM: INotifyPropertyChanged
     public ICommand PasteSelectedCommand { get; }
     public ICommand AddVariableCommand { get; }
     public ICommand DeleteVariableCommand { get; }
+    public ICommand AddButtonRuleCommand { get; }
+    public ICommand DeleteButtonRuleCommand { get; }
+    public ICommand AddFunctionCommand { get; }
+    public ICommand DeleteFunctionCommand { get; }
+    public ICommand AddFunctionParameterCommand { get; }
+    public ICommand DeleteFunctionParameterCommand { get; }
+    public ICommand SaveFunctionToLibraryCommand { get; }
+    public ICommand ImportFunctionFromLibraryCommand { get; }
+    public ICommand AddFunctionCallToSetupCommand { get; }
+    public ICommand AddFunctionCallToAutonomousCommand { get; }
+    public ICommand AddFunctionCallToTeleopAlwaysCommand { get; }
+    public ICommand AddFunctionCallToSelectedButtonRuleCommand { get; }
+    public ICommand AddLibraryFunctionCallCommand { get; }
     public Array VariableTypes { get; } =
     Enum.GetValues(typeof(ProgramVariableType));
 
@@ -118,6 +158,20 @@ public class MainVM: INotifyPropertyChanged
         PasteSelectedCommand = new RelayCommand(PasteSelected);
         AddVariableCommand = new RelayCommand(AddVariable);
         DeleteVariableCommand = new RelayCommand(DeleteVariable);
+        AddButtonRuleCommand = new RelayCommand(AddButtonRule);
+        DeleteButtonRuleCommand = new RelayCommand(DeleteButtonRule);
+        AddFunctionCommand = new RelayCommand(AddFunction);
+        DeleteFunctionCommand = new RelayCommand(DeleteFunction);
+        AddFunctionParameterCommand = new RelayCommand(AddFunctionParameter);
+        DeleteFunctionParameterCommand = new RelayCommand(DeleteFunctionParameter);
+        SaveFunctionToLibraryCommand = new RelayCommand(SaveFunctionToLibrary);
+        ImportFunctionFromLibraryCommand = new RelayCommand(ImportFunctionFromLibrary);
+        AddFunctionCallToSetupCommand = new RelayCommand(AddFunctionCallToSetup);
+        AddFunctionCallToAutonomousCommand = new RelayCommand(AddFunctionCallToAutonomous);
+        AddFunctionCallToTeleopAlwaysCommand = new RelayCommand(AddFunctionCallToTeleopAlways);
+        AddFunctionCallToSelectedButtonRuleCommand = new RelayCommand(AddFunctionCallToSelectedButtonRule);
+        AddLibraryFunctionCallCommand = new RelayCommand(AddLibraryFunctionCall);
+        LoadFunctionLibrary();
     }
     public string ActiveTab
     {
@@ -163,14 +217,14 @@ public class MainVM: INotifyPropertyChanged
 
     private void AddMove()
     {
-        Actions.Add(new MoveAction());
+        AddRobotAction(new MoveAction());
         AddLog("Добавлено движение");
         UpdatePreview();
     }
 
     private void AddWait()
     {
-        Actions.Add(new WaitAction());
+        AddRobotAction(new WaitAction());
         AddLog("Добавлена пауза");
         UpdatePreview();
     }
@@ -184,7 +238,8 @@ public class MainVM: INotifyPropertyChanged
                 Program.Setup,
                 Program.Autonomous,
                 Program.Teleop,
-                Variables);
+                Variables,
+                Program.Functions);
             File.WriteAllText(Path.Combine(projectPath, "robot.ino"), code);
             AddLog("Код сгенерирован");
 
@@ -313,24 +368,24 @@ public class MainVM: INotifyPropertyChanged
     public void UpdatePreview()
     {
         PreviewCode = _generator.GenerateCode(
-             Program.Setup,
-             Program.Autonomous,
-             Program.Teleop,
-             Variables);
+            Program.Setup,
+            Program.Autonomous,
+            Program.Teleop,
+            Variables,
+            Program.Functions);
     }
 
     private void AddLoop()
     {
         var loop = new LoopAction { RepeatCount = 2 };
-        Actions.Add(loop);
+        AddRobotAction(new LoopAction { RepeatCount = 2 });
         AddLog("Добавлен цикл x2");
         UpdatePreview();
     }
 
     private void AddConditional()
     {
-        var cond = new ConditionalAction { Condition = "true" };
-        Actions.Add(cond);
+        AddRobotAction(new ConditionalAction { Condition = "true" });
         AddLog("Добавлено условие");
         UpdatePreview();
     }
@@ -501,6 +556,437 @@ public class MainVM: INotifyPropertyChanged
         SelectedVariable = null;
 
         AddLog("Переменная удалена");
+        UpdatePreview();
+    }
+    private TeleopButtonRule? _selectedButtonRule;
+
+    public TeleopButtonRule? SelectedButtonRule
+    {
+        get => _selectedButtonRule;
+        set
+        {
+            _selectedButtonRule = value;
+            OnPropertyChanged(nameof(SelectedButtonRule));
+        }
+    }
+    private void AddButtonRule()
+    {
+        var rule = new TeleopButtonRule
+        {
+            Button = "TRIANGLE",
+            TriggerMode = TriggerMode.WhilePressed
+        };
+
+        Program.Teleop.ButtonRules.Add(rule);
+
+        AddLog("[Teleop] Добавлено правило кнопки");
+        UpdatePreview();
+    }
+
+    private void DeleteButtonRule()
+    {
+        if (SelectedButtonRule == null)
+            return;
+
+        Program.Teleop.ButtonRules.Remove(SelectedButtonRule);
+        SelectedButtonRule = null;
+
+        AddLog("[Teleop] Правило кнопки удалено");
+        UpdatePreview();
+    }
+    private int _teleopTabIndex;
+
+    public int TeleopTabIndex
+    {
+        get => _teleopTabIndex;
+        set
+        {
+            _teleopTabIndex = value;
+
+            if (ActiveTabIndex == 3)
+            {
+                ActiveTab = value switch
+                {
+                    0 => "TeleopAlways",
+                    1 => "TeleopButtons",
+                    _ => "TeleopAlways"
+                };
+
+                SelectedAction = null;
+
+                OnPropertyChanged(nameof(Actions));
+                OnPropertyChanged(nameof(ActiveTab));
+            }
+
+            OnPropertyChanged(nameof(TeleopTabIndex));
+        }
+    }
+    private void AddRobotAction(RobotAction action)
+    {
+        // Если мы на вкладке Teleop -> Buttons,
+        // действие надо добавлять внутрь выбранного правила кнопки
+        if (ActiveTab == "TeleopButtons")
+        {
+            if (SelectedButtonRule == null)
+            {
+                AddLog("[Teleop Buttons] Сначала выбери правило кнопки.");
+                return;
+            }
+
+            SelectedButtonRule.Children.Add(action);
+            action.Parent = SelectedButtonRule;
+
+            AddLog($"[Teleop Buttons] Добавлено действие в кнопку {SelectedButtonRule.Button}: {action.DisplayType}");
+            UpdatePreview();
+            return;
+        }
+
+        // Если выбран контейнер: цикл, условие, IF/ELSE, правило и т.п.
+        if (SelectedAction is ContainerAction container)
+        {
+            container.Children.Add(action);
+            action.Parent = container;
+
+            AddLog($"[{ActiveTab}] Добавлено действие внутрь {container.DisplayType}: {action.DisplayType}");
+            UpdatePreview();
+            return;
+        }
+
+        // Обычное добавление в текущий раздел
+        Actions.Add(action);
+        action.Parent = null;
+
+        AddLog($"[{ActiveTab}] Добавлено действие: {action.DisplayType}");
+        UpdatePreview();
+    }
+    public string[] CppTypes { get; } =
+{
+    "void",
+    "bool",
+    "int",
+    "long",
+    "float",
+    "double",
+    "String"
+};
+
+    public ObservableCollection<ProgramFunction> FunctionLibrary { get; } = new();
+
+    private ProgramFunction? _selectedFunction;
+    public ProgramFunction? SelectedFunction
+    {
+        get => _selectedFunction;
+        set
+        {
+            _selectedFunction = value;
+            OnPropertyChanged(nameof(SelectedFunction));
+        }
+    }
+
+    private ProgramFunction? _selectedLibraryFunction;
+    public ProgramFunction? SelectedLibraryFunction
+    {
+        get => _selectedLibraryFunction;
+        set
+        {
+            _selectedLibraryFunction = value;
+            OnPropertyChanged(nameof(SelectedLibraryFunction));
+        }
+    }
+
+    private FunctionParameter? _selectedFunctionParameter;
+    public FunctionParameter? SelectedFunctionParameter
+    {
+        get => _selectedFunctionParameter;
+        set
+        {
+            _selectedFunctionParameter = value;
+            OnPropertyChanged(nameof(SelectedFunctionParameter));
+        }
+    }
+    private void LoadFunctionLibrary()
+    {
+        FunctionLibrary.Clear();
+
+        foreach (var function in FunctionLibraryService.LoadAll())
+            FunctionLibrary.Add(function);
+
+        AddLog($"Загружено функций из библиотеки: {FunctionLibrary.Count}");
+    }
+
+    private void AddFunction()
+    {
+        var function = new ProgramFunction
+        {
+            Name = "driveByDegrees",
+            ReturnType = "void",
+            BodyCode =
+    @"  prizm.resetEncoders();
+  expansion.resetEncoders(1);
+
+  prizm.setMotorDegree(2, 225, degLR);
+  prizm.setMotorDegree(1, 225, degRR);
+
+  expansion.setMotorDegree(1, 1, 225, degLF);
+  expansion.setMotorDegree(1, 2, 225, degRF);"
+        };
+
+        function.Parameters.Add(new FunctionParameter { Type = "int", Name = "degLR" });
+        function.Parameters.Add(new FunctionParameter { Type = "int", Name = "degRR" });
+        function.Parameters.Add(new FunctionParameter { Type = "int", Name = "degLF" });
+        function.Parameters.Add(new FunctionParameter { Type = "int", Name = "degRF" });
+
+        Program.Functions.Add(function);
+        SelectedFunction = function;
+
+        AddLog("Добавлена функция");
+        UpdatePreview();
+    }
+
+    private void DeleteFunction()
+    {
+        if (SelectedFunction == null)
+            return;
+
+        Program.Functions.Remove(SelectedFunction);
+        SelectedFunction = null;
+
+        AddLog("Функция удалена");
+        UpdatePreview();
+    }
+
+    private void AddFunctionParameter()
+    {
+        if (SelectedFunction == null)
+            return;
+
+        SelectedFunction.Parameters.Add(new FunctionParameter
+        {
+            Type = "int",
+            Name = "value"
+        });
+
+        UpdatePreview();
+    }
+
+    private void DeleteFunctionParameter()
+    {
+        if (SelectedFunction == null || SelectedFunctionParameter == null)
+            return;
+
+        SelectedFunction.Parameters.Remove(SelectedFunctionParameter);
+        SelectedFunctionParameter = null;
+
+        UpdatePreview();
+    }
+
+    private void SaveFunctionToLibrary()
+    {
+        if (SelectedFunction == null)
+        {
+            AddLog("Сначала выбери функцию.");
+            return;
+        }
+
+        FunctionLibraryService.Save(SelectedFunction);
+
+        LoadFunctionLibrary();
+
+        AddLog($"Функция сохранена в библиотеку: {SelectedFunction.Name}");
+    }
+
+    private void ImportFunctionFromLibrary()
+    {
+        if (SelectedLibraryFunction == null)
+        {
+            AddLog("Сначала выбери функцию из библиотеки.");
+            return;
+        }
+
+        var copy = CloneProgramFunction(SelectedLibraryFunction);
+
+        Program.Functions.Add(copy);
+        SelectedFunction = copy;
+
+        AddLog($"Функция добавлена в проект: {copy.Name}");
+        UpdatePreview();
+    }
+
+    private string GetDefaultArgumentValue(string type)
+    {
+        return type switch
+        {
+            "bool" => "false",
+            "float" => "0.0",
+            "double" => "0.0",
+            "String" => "\"\"",
+            _ => "0"
+        };
+    }
+
+    private ProgramFunction CloneProgramFunction(ProgramFunction source)
+    {
+        var copy = new ProgramFunction
+        {
+            Name = source.Name,
+            ReturnType = source.ReturnType,
+            BodyCode = source.BodyCode
+        };
+
+        foreach (var p in source.Parameters)
+        {
+            copy.Parameters.Add(new FunctionParameter
+            {
+                Type = p.Type,
+                Name = p.Name
+            });
+        }
+
+        return copy;
+    }
+    private void AddLibraryFunctionCall()
+    {
+        if (SelectedLibraryFunction == null)
+        {
+            AddLog("Сначала выбери функцию из библиотеки.");
+            return;
+        }
+
+        var projectFunction = EnsureFunctionInProject(SelectedLibraryFunction);
+
+        SelectedFunction = projectFunction;
+
+        AddFunctionCallFor(projectFunction);
+    }
+    private ProgramFunction EnsureFunctionInProject(ProgramFunction libraryFunction)
+    {
+        var existing = Program.Functions
+            .FirstOrDefault(f => f.SafeName == libraryFunction.SafeName);
+
+        if (existing != null)
+            return existing;
+
+        var copy = CloneProgramFunction(libraryFunction);
+
+        Program.Functions.Add(copy);
+
+        AddLog($"Функция добавлена в проект: {copy.Name}");
+
+        return copy;
+    }
+    private void AddFunctionCallFor(ProgramFunction function)
+    {
+        var call = new FunctionCallAction
+        {
+            FunctionName = function.SafeName
+        };
+
+        foreach (var p in function.Parameters)
+        {
+            call.Arguments.Add(new ParameterItem
+            {
+                Name = p.Name,
+                Value = GetDefaultArgumentValue(p.Type)
+            });
+        }
+
+        AddRobotAction(call);
+
+        AddLog($"Добавлен вызов функции: {function.Name}");
+        UpdatePreview();
+    }
+    private ProgramFunction? GetSelectedFunctionForCall()
+    {
+        if (SelectedFunction != null)
+            return SelectedFunction;
+
+        if (SelectedLibraryFunction != null)
+            return EnsureFunctionInProject(SelectedLibraryFunction);
+
+        AddLog("Сначала выбери функцию проекта или функцию из библиотеки.");
+        return null;
+    }
+    private FunctionCallAction CreateFunctionCall(ProgramFunction function)
+    {
+        var call = new FunctionCallAction
+        {
+            FunctionName = function.SafeName
+        };
+
+        foreach (var p in function.Parameters)
+        {
+            call.Arguments.Add(new ParameterItem
+            {
+                Name = p.Name,
+                Value = GetDefaultArgumentValue(p.Type)
+            });
+        }
+
+        return call;
+    }
+    private void AddFunctionCallToSetup()
+    {
+        var function = GetSelectedFunctionForCall();
+        if (function == null)
+            return;
+
+        var call = CreateFunctionCall(function);
+
+        Program.Setup.Add(call);
+        call.Parent = null;
+
+        AddLog($"[Setup] Добавлен вызов функции: {function.Name}");
+        UpdatePreview();
+    }
+
+    private void AddFunctionCallToAutonomous()
+    {
+        var function = GetSelectedFunctionForCall();
+        if (function == null)
+            return;
+
+        var call = CreateFunctionCall(function);
+
+        Program.Autonomous.Add(call);
+        call.Parent = null;
+
+        AddLog($"[Autonomous] Добавлен вызов функции: {function.Name}");
+        UpdatePreview();
+    }
+
+    private void AddFunctionCallToTeleopAlways()
+    {
+        var function = GetSelectedFunctionForCall();
+        if (function == null)
+            return;
+
+        var call = CreateFunctionCall(function);
+
+        Program.Teleop.AlwaysRunning.Add(call);
+        call.Parent = null;
+
+        AddLog($"[Teleop Always] Добавлен вызов функции: {function.Name}");
+        UpdatePreview();
+    }
+
+    private void AddFunctionCallToSelectedButtonRule()
+    {
+        var function = GetSelectedFunctionForCall();
+        if (function == null)
+            return;
+
+        if (SelectedButtonRule == null)
+        {
+            AddLog("[Teleop Buttons] Сначала выбери правило кнопки.");
+            return;
+        }
+
+        var call = CreateFunctionCall(function);
+
+        SelectedButtonRule.Children.Add(call);
+        call.Parent = SelectedButtonRule;
+
+        AddLog($"[Teleop Buttons] В кнопку {SelectedButtonRule.Button} добавлен вызов функции: {function.Name}");
         UpdatePreview();
     }
 }

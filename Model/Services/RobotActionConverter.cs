@@ -62,7 +62,12 @@ public class RobotActionConverter : JsonConverter<RobotAction>
             "BranchAction" =>
                 JsonSerializer.Deserialize<BranchAction>(root.GetRawText(), options)
                 ?? throw new JsonException("Cannot deserialize BranchAction"),
-
+            "TeleopButtonRule" =>
+                JsonSerializer.Deserialize<TeleopButtonRule>(root.GetRawText(), options)
+                ?? throw new JsonException("Cannot deserialize TeleopButtonRule"),
+            "FunctionCallAction" =>
+                JsonSerializer.Deserialize<FunctionCallAction>(root.GetRawText(), options)
+                ?? throw new JsonException("Cannot deserialize FunctionCallAction"),
             _ => throw new JsonException($"Unknown RobotAction type: {actionType}")
         };
     }
@@ -95,6 +100,12 @@ public class RobotActionConverter : JsonConverter<RobotAction>
                 break;
             case BranchAction branch:
                 JsonSerializer.Serialize(writer, branch, options);
+                break;
+            case TeleopButtonRule rule:
+                JsonSerializer.Serialize(writer, rule, options);
+                break;
+            case FunctionCallAction functionCall:
+                JsonSerializer.Serialize(writer, functionCall, options);
                 break;
             default:
                 throw new NotSupportedException(
