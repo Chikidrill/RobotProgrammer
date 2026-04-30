@@ -18,6 +18,7 @@ namespace RobotProgrammer.View
         {
             InitializeComponent();
             DataContext = new MainVM(new FileDialogService(), new WindowService(), new DialogService());
+
             
         }
         private void Tree_SelectedItemChanged(object sender,
