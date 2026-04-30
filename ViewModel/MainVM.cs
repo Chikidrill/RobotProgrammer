@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
 using ViewModel;
+using System.IO.Ports;
 
 namespace RobotProgrammer.ViewModel;
 
@@ -19,7 +20,6 @@ public class MainVM : INotifyPropertyChanged
     #region Fields
 
     private const string DefaultProjectPath = "robot";
-    private const string DefaultComPort = "COM5";
 
     private readonly IFileDialogService _fileDialog;
     private readonly IWindowService _windowService;
@@ -38,13 +38,16 @@ public class MainVM : INotifyPropertyChanged
     private FunctionParameter? _selectedFunctionParameter;
 
     private string _activeTab = "Autonomous";
-    private int _activeTabIndex = 3;
+    private int _activeTabIndex = 5;
     private int _teleopTabIndex;
     private string _previewCode = string.Empty;
     private CustomAction? _selectedTemplate;
 
     private AutonomousRoutine? _selectedAutonomousRoutine;
     private string _newAutonomousRoutineName = "New autonomous";
+
+    private ProgramInclude? _selectedInclude;
+    private string? _selectedComPort;
     #endregion
 
     #region Constructor
@@ -109,6 +112,11 @@ public class MainVM : INotifyPropertyChanged
         LoadSelectedAutonomousCommand = new RelayCommand(LoadSelectedAutonomous);
         NewAutonomousCommand = new RelayCommand(NewAutonomous);
 
+        AddIncludeCommand = new RelayCommand(AddInclude);
+        DeleteIncludeCommand = new RelayCommand(DeleteInclude);
+        RefreshComPortsCommand = new RelayCommand(RefreshComPorts);
+
+        RefreshComPorts();
         LoadAutonomousLibrary(logResult: true);
         LoadTemplateLibrary(logResult: true);
         LoadFunctionLibrary(logResult: true);
@@ -135,6 +143,7 @@ public class MainVM : INotifyPropertyChanged
         {
             _program = value;
             OnPropertyChanged(nameof(Program));
+            OnPropertyChanged(nameof(Includes));
             OnPropertyChanged(nameof(Variables));
             OnPropertyChanged(nameof(Actions));
         }
@@ -199,7 +208,12 @@ public class MainVM : INotifyPropertyChanged
         SelectedAction?.GetParameters() ?? new ObservableCollection<ActionParameter>();
     public ObservableCollection<CustomAction> TemplateLibrary { get; } = new();
     public ObservableCollection<AutonomousRoutine> AutonomousLibrary { get; } = new();
+    public ObservableCollection<ProgramInclude> Includes => Program.Includes;
 
+    public Array IncludeKinds { get; } =
+        Enum.GetValues(typeof(ProgramIncludeKind));
+
+    public ObservableCollection<string> AvailableComPorts { get; } = new();
     #endregion
 
     #region Selected items
@@ -294,6 +308,26 @@ public class MainVM : INotifyPropertyChanged
         }
     }
 
+    public ProgramInclude? SelectedInclude
+    {
+        get => _selectedInclude;
+        set
+        {
+            _selectedInclude = value;
+            OnPropertyChanged(nameof(SelectedInclude));
+        }
+    }
+
+    public string? SelectedComPort
+    {
+        get => _selectedComPort;
+        set
+        {
+            _selectedComPort = value;
+            OnPropertyChanged(nameof(SelectedComPort));
+        }
+    }
+
     #endregion
 
     #region Navigation
@@ -324,9 +358,9 @@ public class MainVM : INotifyPropertyChanged
 
             ActiveTab = value switch
             {
-                1 => "Setup",
-                3 => "Autonomous",
-                4 => TeleopTabIndex == 1 ? "TeleopButtons" : "TeleopAlways",
+                2 => "Setup",
+                4 => "Autonomous",
+                5 => TeleopTabIndex == 1 ? "TeleopButtons" : "TeleopAlways",
                 _ => ActiveTab
             };
 
@@ -348,7 +382,7 @@ public class MainVM : INotifyPropertyChanged
 
             _teleopTabIndex = value;
 
-            if (ActiveTabIndex == 4)
+            if (ActiveTabIndex == 5)
             {
                 ActiveTab = value switch
                 {
@@ -395,12 +429,7 @@ public class MainVM : INotifyPropertyChanged
 
     private string GenerateSketchCode()
     {
-        return _generator.GenerateCode(
-            Program.Setup,
-            Program.Autonomous,
-            Program.Teleop,
-            Program.Variables,
-            Program.Functions);
+        return _generator.GenerateCode(Program);
     }
 
     #endregion
@@ -456,6 +485,10 @@ public class MainVM : INotifyPropertyChanged
     public ICommand SaveCurrentAutonomousCommand { get; }
     public ICommand LoadSelectedAutonomousCommand { get; }
     public ICommand NewAutonomousCommand { get; }
+
+    public ICommand AddIncludeCommand { get; }
+    public ICommand DeleteIncludeCommand { get; }
+    public ICommand RefreshComPortsCommand { get; }
     #endregion
 
     #region Project file
@@ -601,11 +634,18 @@ public class MainVM : INotifyPropertyChanged
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(SelectedComPort))
+            {
+                AddLog("[Ошибка загрузки] Сначала выбери COM-порт.");
+                RefreshComPorts();
+                return;
+            }
+
             if (!CompileSketch())
                 return;
 
-            _cli.Upload(DefaultProjectPath, DefaultComPort, AddLog);
-            AddLog("Загрузка завершена");
+            _cli.Upload(DefaultProjectPath, SelectedComPort, AddLog);
+            AddLog($"Загрузка завершена на порт {SelectedComPort}");
         }
         catch (Exception ex)
         {
@@ -1650,13 +1690,65 @@ public class MainVM : INotifyPropertyChanged
         SelectedAction = null;
         NewAutonomousRoutineName = "Новая автономка";
 
-        if (ActiveTabIndex != 3) // если Autonomous у тебя на другой вкладке — поменяй индекс
-            ActiveTabIndex = 3;
+        if (ActiveTabIndex != 4) // если Autonomous у тебя на другой вкладке — поменяй индекс
+            ActiveTabIndex = 4;
 
         OnPropertyChanged(nameof(Actions));
 
         AddLog("Создана новая пустая автономка.");
         UpdatePreview();
     }
+    #endregion
+
+    #region Base code / COM ports
+
+    private void AddInclude()
+    {
+        var include = new ProgramInclude
+        {
+            Header = "",
+            Kind = ProgramIncludeKind.System,
+            IsEnabled = true
+        };
+
+        Program.Includes.Add(include);
+        SelectedInclude = include;
+
+        AddLog($"Добавлен include: {include.GenerateCode()}");
+        UpdatePreview();
+    }
+
+    private void DeleteInclude()
+    {
+        if (SelectedInclude == null)
+            return;
+
+        Program.Includes.Remove(SelectedInclude);
+        SelectedInclude = null;
+
+        AddLog("Include удалён");
+        UpdatePreview();
+    }
+
+    private void RefreshComPorts()
+    {
+        var previousPort = SelectedComPort;
+
+        AvailableComPorts.Clear();
+
+        foreach (var port in SerialPort.GetPortNames().OrderBy(port => port))
+            AvailableComPorts.Add(port);
+
+        if (previousPort != null && AvailableComPorts.Contains(previousPort))
+            SelectedComPort = previousPort;
+        else
+            SelectedComPort = AvailableComPorts.FirstOrDefault();
+
+        if (AvailableComPorts.Count == 0)
+            AddLog("COM-порты не найдены.");
+        else
+            AddLog($"Найдено COM-портов: {AvailableComPorts.Count}");
+    }
+
     #endregion
 }
