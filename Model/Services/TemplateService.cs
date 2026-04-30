@@ -32,5 +32,28 @@ namespace Model.Services
         {
             return new List<string>(Directory.GetFiles(TemplatesFolder, "*.json", SearchOption.TopDirectoryOnly));
         }
+
+        public static List<CustomAction> LoadAllTemplates()
+        {
+            var result = new List<CustomAction>();
+
+            foreach (var file in GetAllTemplateFiles())
+            {
+                try
+                {
+                    var fileName = Path.GetFileName(file);
+                    var template = LoadTemplate(fileName);
+
+                    if (template != null)
+                        result.Add(template);
+                }
+                catch
+                {
+                    // битый шаблон не валим на всё приложение
+                }
+            }
+
+            return result;
+        }
     }
 }

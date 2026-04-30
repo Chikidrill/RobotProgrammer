@@ -184,5 +184,26 @@ namespace RobotProgrammer.View
             if (DataContext is MainVM vm)
                 vm.UpdatePreview();
         }
+
+        private void TreeViewItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is TreeViewItem item)
+            {
+                item.IsSelected = true;
+                item.Focus();
+                e.Handled = false;
+            }
+        }
+
+        private void ListBoxItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is ListBoxItem item)
+            {
+                item.IsSelected = true;
+                item.Focus();
+                e.Handled = false;
+            }
+        }
+
     }
 }
