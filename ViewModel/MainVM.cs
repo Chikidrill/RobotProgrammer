@@ -42,6 +42,9 @@ public class MainVM : INotifyPropertyChanged
     private int _teleopTabIndex;
     private string _previewCode = string.Empty;
     private CustomAction? _selectedTemplate;
+
+    private AutonomousRoutine? _selectedAutonomousRoutine;
+    private string _newAutonomousRoutineName = "New autonomous";
     #endregion
 
     #region Constructor
@@ -101,6 +104,12 @@ public class MainVM : INotifyPropertyChanged
         AddTemplateToCurrentContextCommand = new RelayCommand(AddTemplateToCurrentContext);
         EditSelectedTemplateCommand = new RelayCommand(EditSelectedTemplate);
 
+        RefreshAutonomousLibraryCommand = new RelayCommand(() => LoadAutonomousLibrary(logResult: true));
+        SaveCurrentAutonomousCommand = new RelayCommand(SaveCurrentAutonomous);
+        LoadSelectedAutonomousCommand = new RelayCommand(LoadSelectedAutonomous);
+        NewAutonomousCommand = new RelayCommand(NewAutonomous);
+
+        LoadAutonomousLibrary(logResult: true);
         LoadTemplateLibrary(logResult: true);
         LoadFunctionLibrary(logResult: true);
         UpdatePreview();
@@ -189,6 +198,7 @@ public class MainVM : INotifyPropertyChanged
     public ObservableCollection<ActionParameter> SelectedParameters =>
         SelectedAction?.GetParameters() ?? new ObservableCollection<ActionParameter>();
     public ObservableCollection<CustomAction> TemplateLibrary { get; } = new();
+    public ObservableCollection<AutonomousRoutine> AutonomousLibrary { get; } = new();
 
     #endregion
 
@@ -441,6 +451,11 @@ public class MainVM : INotifyPropertyChanged
     public ICommand AddFunctionCallToCurrentContextCommand { get; }
     public ICommand AddTemplateToCurrentContextCommand { get; }
     public ICommand EditSelectedTemplateCommand { get; }
+
+    public ICommand RefreshAutonomousLibraryCommand { get; }
+    public ICommand SaveCurrentAutonomousCommand { get; }
+    public ICommand LoadSelectedAutonomousCommand { get; }
+    public ICommand NewAutonomousCommand { get; }
     #endregion
 
     #region Project file
@@ -1525,6 +1540,123 @@ public class MainVM : INotifyPropertyChanged
         LoadTemplateLibrary(logResult: false);
 
         AddLog($"Пользовательский блок обновлён: {updated.TemplateName}");
+    }
+    #endregion
+
+    #region Autonomous Variability
+    public AutonomousRoutine? SelectedAutonomousRoutine
+    {
+        get => _selectedAutonomousRoutine;
+        set
+        {
+            _selectedAutonomousRoutine = value;
+            OnPropertyChanged(nameof(SelectedAutonomousRoutine));
+        }
+    }
+
+    public string NewAutonomousRoutineName
+    {
+        get => _newAutonomousRoutineName;
+        set
+        {
+            _newAutonomousRoutineName = value;
+            OnPropertyChanged(nameof(NewAutonomousRoutineName));
+        }
+    }
+    #endregion
+
+    #region Autonomous library
+
+    private void LoadAutonomousLibrary(bool logResult = false)
+    {
+        AutonomousLibrary.Clear();
+
+        foreach (var routine in AutonomousLibraryService.LoadAll())
+        {
+            RestoreParents(routine.Actions);
+            AutonomousLibrary.Add(routine);
+        }
+
+        if (logResult)
+            AddLog($"Загружено автономок из библиотеки: {AutonomousLibrary.Count}");
+    }
+
+    private void SaveCurrentAutonomous()
+    {
+        var name = NewAutonomousRoutineName?.Trim();
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            AddLog("Укажи название автономки.");
+            return;
+        }
+
+        var routine = new AutonomousRoutine
+        {
+            Name = name
+        };
+
+        foreach (var action in Program.Autonomous)
+        {
+            var copy = CloneAction(action);
+            copy.Parent = null;
+            routine.Actions.Add(copy);
+        }
+
+        AutonomousLibraryService.Save(routine);
+        LoadAutonomousLibrary();
+
+        SelectedAutonomousRoutine = AutonomousLibrary
+            .FirstOrDefault(x => x.Name == routine.Name);
+
+        NewAutonomousRoutineName = routine.Name;
+
+        AddLog($"Автономка сохранена в библиотеку: {routine.Name}");
+        UpdatePreview();
+    }
+
+    private void LoadSelectedAutonomous()
+    {
+        if (SelectedAutonomousRoutine == null)
+        {
+            AddLog("Сначала выбери автономку из библиотеки.");
+            return;
+        }
+
+        Program.Autonomous.Clear();
+
+        foreach (var action in SelectedAutonomousRoutine.Actions)
+        {
+            var copy = CloneAction(action);
+            copy.Parent = null;
+            Program.Autonomous.Add(copy);
+        }
+
+        RestoreParents(Program.Autonomous);
+
+        NewAutonomousRoutineName = SelectedAutonomousRoutine.Name;
+        SelectedAction = null;
+
+        OnPropertyChanged(nameof(Actions));
+
+        AddLog($"Загружена автономка: {SelectedAutonomousRoutine.Name}");
+        UpdatePreview();
+    }
+    private void NewAutonomous()
+    {
+        Program.Autonomous.Clear();
+
+        SelectedAutonomousRoutine = null;
+        SelectedAction = null;
+        NewAutonomousRoutineName = "Новая автономка";
+
+        if (ActiveTabIndex != 3) // если Autonomous у тебя на другой вкладке — поменяй индекс
+            ActiveTabIndex = 3;
+
+        OnPropertyChanged(nameof(Actions));
+
+        AddLog("Создана новая пустая автономка.");
+        UpdatePreview();
     }
     #endregion
 }

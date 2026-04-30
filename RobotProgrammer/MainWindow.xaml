@@ -857,15 +857,78 @@
                             </Grid.RowDefinitions>
 
                             <Border Style="{StaticResource HintBorderStyle}">
-                                <TextBlock Text="Блок действий, которые выполняются в автономном периоде."
-                                           TextWrapping="Wrap"
-                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Блок действий, которые выполняются в автономном периоде. Можно сохранять текущую автономку в библиотеку и быстро подгружать другой вариант."
+                           TextWrapping="Wrap"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="0,0,0,8"/>
+
+                                    <!-- Load row -->
+                                    <Grid Grid.Row="1" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="110"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="90"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="Из библиотеки:"
+                               VerticalAlignment="Center"/>
+
+                                        <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding AutonomousLibrary}"
+                              SelectedItem="{Binding SelectedAutonomousRoutine, Mode=TwoWay}"
+                              DisplayMemberPath="Name"
+                              Margin="0,0,8,0"/>
+
+                                        <Button Grid.Column="2"
+                            Content="Новая"
+                            Command="{Binding NewAutonomousCommand}"
+                            Margin="0,0,8,0"/>
+
+                                        <Button Grid.Column="3"
+                            Content="Загрузить"
+                            Command="{Binding LoadSelectedAutonomousCommand}"
+                            Margin="0,0,8,0"/>
+
+                                        <Button Grid.Column="4"
+                            Content="Обновить"
+                            Command="{Binding RefreshAutonomousLibraryCommand}"/>
+                                    </Grid>
+
+                                    <!-- Save row -->
+                                    <Grid Grid.Row="2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="110"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="100"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="Название:"
+                               VerticalAlignment="Center"/>
+
+                                        <TextBox Grid.Column="1"
+                             Text="{Binding NewAutonomousRoutineName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,8,0"/>
+
+                                        <Button Grid.Column="2"
+                            Content="Сохранить"
+                            Command="{Binding SaveCurrentAutonomousCommand}"/>
+                                    </Grid>
+                                </Grid>
                             </Border>
 
                             <Border Grid.Row="1"
-                                    Style="{StaticResource TreeHostBorderStyle}">
+                Style="{StaticResource TreeHostBorderStyle}">
                                 <TreeView Style="{StaticResource ActionTreeStyle}"
-                                          ItemsSource="{Binding Actions}"/>
+                      ItemsSource="{Binding Actions}"/>
                             </Border>
                         </Grid>
                     </TabItem>
