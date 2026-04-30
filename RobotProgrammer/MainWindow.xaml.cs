@@ -184,6 +184,23 @@ namespace RobotProgrammer.View
             if (DataContext is MainVM vm)
                 vm.UpdatePreview();
         }
+        private void EditorGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (DataContext is MainVM vm)
+                    vm.UpdatePreview();
+            }));
+        }
+
+        private void EditorGrid_CurrentCellChanged(object sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (DataContext is MainVM vm)
+                    vm.UpdatePreview();
+            }));
+        }
 
         private void TreeViewItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -204,6 +221,10 @@ namespace RobotProgrammer.View
                 e.Handled = false;
             }
         }
-
+        private void EditorCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DataContext is MainVM vm)
+                vm.UpdatePreview();
+        }
     }
 }

@@ -1,75 +1,73 @@
 ﻿using Model.RobotActions;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Model.ArduinoServices;
 
 public class ArduinoCodeGenerator
 {
-    public string GenerateCode(
-        IEnumerable<RobotAction> setup,
-        IEnumerable<RobotAction> autonomous,
-        TeleopProgram teleop,
-        IEnumerable<ProgramVariable> variables,
-        IEnumerable<ProgramFunction> functions)
+    public string GenerateCode(RobotProgram program)
     {
+        var includesBuilder = new StringBuilder();
         var globalsBuilder = new StringBuilder();
-        foreach (var variable in variables)
-            globalsBuilder.AppendLine(variable.GetDeclarationCode());
-
+        var functionsBuilder = new StringBuilder();
         var setupBuilder = new StringBuilder();
-        foreach (var action in setup)
-            setupBuilder.AppendLine(action.GenerateCode());
-
         var autonomousBuilder = new StringBuilder();
-        foreach (var action in autonomous)
-            autonomousBuilder.AppendLine(action.GenerateCode());
-
         var teleopBuilder = new StringBuilder();
 
-        teleopBuilder.AppendLine("  // Always running");
-        foreach (var action in teleop.AlwaysRunning)
-            teleopBuilder.AppendLine(action.GenerateCode());
+        foreach (var includeCode in program.Includes
+                     .Where(include => include.IsEnabled)
+                     .Select(include => include.GenerateCode())
+                     .Where(code => !string.IsNullOrWhiteSpace(code))
+                     .Distinct())
+        {
+            includesBuilder.AppendLine(includeCode);
+        }
 
-        teleopBuilder.AppendLine("  // Button rules");
-        foreach (var rule in teleop.ButtonRules)
-            teleopBuilder.AppendLine(rule.GenerateCode());
-        var functionsBuilder = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(program.GlobalCode))
+        {
+            globalsBuilder.AppendLine(program.GlobalCode.Trim());
+            globalsBuilder.AppendLine();
+        }
 
-        foreach (var function in functions)
+        foreach (var variable in program.Variables)
+            globalsBuilder.AppendLine(variable.GetDeclarationCode());
+
+        foreach (var function in program.Functions)
             functionsBuilder.AppendLine(function.GenerateCode());
 
+        if (!string.IsNullOrWhiteSpace(program.SetupBaseCode))
+            setupBuilder.AppendLine(Indent(program.SetupBaseCode.Trim(), 2));
+
+        setupBuilder.AppendLine();
+        setupBuilder.AppendLine("  // ===== User Setup =====");
+
+        foreach (var action in program.Setup)
+            setupBuilder.AppendLine(Indent(action.GenerateCode(), 2));
+
+        foreach (var action in program.Autonomous)
+            autonomousBuilder.AppendLine(Indent(action.GenerateCode(), 2));
+
+        teleopBuilder.AppendLine("  // Always running");
+        foreach (var action in program.Teleop.AlwaysRunning)
+            teleopBuilder.AppendLine(Indent(action.GenerateCode(), 2));
+
+        teleopBuilder.AppendLine();
+        teleopBuilder.AppendLine("  // Button rules");
+        foreach (var rule in program.Teleop.ButtonRules)
+            teleopBuilder.AppendLine(Indent(rule.GenerateCode(), 2));
+
         return $@"
-#include <TELEOP.h>
-#include <PRIZM.h>
-
-PRIZM prizm;
-EXPANSION expansion;
-EXPANSION expansion2;
-PS4 ps4;
-
-// ===== Program variables =====
+{includesBuilder}
 {globalsBuilder}
-
-bool autoMode = false;
-
-void setup() {{
-  prizm.PrizmBegin();
-  Serial.begin(115200);
-
-  ps4.setDeadZone(LEFT, 10);
-  ps4.setDeadZone(RIGHT, 10);
- // ===== User Setup =====
-{setupBuilder}
-}}
 // ===== User Functions =====
 {functionsBuilder}
-void loop() {{
-  ps4.getPS4();
 
-  if (ps4.Button(OPTIONS)) {{
-    autoMode = true;
-  }}
+void setup() {{
+{setupBuilder}
+}}
+
+void loop() {{
+{Indent(program.LoopBaseCode, 2)}
 
   if (autoMode) {{
     RunAutonomous();
@@ -77,7 +75,7 @@ void loop() {{
     RunTeleop();
   }}
 
-  delay(20);
+{Indent(program.LoopEndCode, 2)}
 }}
 
 void RunAutonomous() {{
@@ -87,17 +85,12 @@ void RunAutonomous() {{
 void RunTeleop() {{
 {teleopBuilder}
 }}
-";
+".TrimStart();
     }
 
-    public string SaveToFile(
-        IEnumerable<RobotAction> setup,
-        IEnumerable<RobotAction> autonomous,
-        TeleopProgram teleop,
-        IEnumerable<ProgramVariable> variables,
-        IEnumerable<ProgramFunction> functions)
+    public string SaveToFile(RobotProgram program)
     {
-        string code = GenerateCode(setup, autonomous, teleop, variables, functions);
+        string code = GenerateCode(program);
 
         string folderPath = Path.Combine(
             Directory.GetCurrentDirectory(),
@@ -110,5 +103,25 @@ void RunTeleop() {{
         File.WriteAllText(filePath, code);
 
         return folderPath;
+    }
+
+    private static string Indent(string? code, int spaces)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+            return string.Empty;
+
+        string prefix = new(' ', spaces);
+
+        var lines = code
+            .Replace("\r\n", "\n")
+            .Replace("\r", "\n")
+            .Split('\n');
+
+        return string.Join(
+            Environment.NewLine,
+            lines.Select(line =>
+                string.IsNullOrWhiteSpace(line)
+                    ? string.Empty
+                    : prefix + line));
     }
 }
