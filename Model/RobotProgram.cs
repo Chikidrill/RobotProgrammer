@@ -10,7 +10,7 @@ namespace Model
 {
     public class RobotProgram
     {
-        public ObservableCollection<RobotAction> Variables { get; } = new();
+        public ObservableCollection<ProgramVariable> Variables { get; } = new();
         public ObservableCollection<RobotAction> Setup { get; } = new();
         public ObservableCollection<RobotAction> Autonomous { get; } = new();
         public TeleopProgram Teleop { get; } = new();
