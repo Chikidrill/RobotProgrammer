@@ -802,7 +802,7 @@
 
                             <DockPanel Margin="0,0,0,8">
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                                    <Button Content="Добавить" Width="95" Command="{Binding AddVariableCommand}"/>
+                                    <Button Content="Добавить" Width="95" Command="{Binding AddVariableCommand}" Margin="0,0,10,0"/>
                                     <Button Content="Удалить" Width="95" Command="{Binding DeleteVariableCommand}"/>
                                 </StackPanel>
 
