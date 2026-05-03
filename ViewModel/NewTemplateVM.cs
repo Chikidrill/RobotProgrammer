@@ -49,15 +49,22 @@ namespace RobotProgrammer.ViewModel
             });
             RemoveParameterCommand = new RelayCommand(() =>
             {
-                if (SelectedParameter != null)
-                    Parameters.Remove(SelectedParameter);
+                if (SelectedParameter == null)
+                    return;
+
+                Parameters.Remove(SelectedParameter);
+                SelectedParameter = null;
             });
         }
-       
-        public ParameterItem SelectedParameter
+
+        public ParameterItem? SelectedParameter
         {
             get => _selectedParameter;
-            set { _selectedParameter = value; OnPropertyChanged(nameof(SelectedParameter)); }
+            set
+            {
+                _selectedParameter = value;
+                OnPropertyChanged(nameof(SelectedParameter));
+            }
         }
 
         private void Ok()
