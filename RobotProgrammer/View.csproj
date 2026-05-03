@@ -26,5 +26,10 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
-
+    <ItemGroup>
+	    <Content Include="Tools\arduino-cli.exe">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		    <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+	    </Content>
+    </ItemGroup>
 </Project>

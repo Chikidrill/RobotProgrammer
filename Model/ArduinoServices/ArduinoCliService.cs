@@ -5,9 +5,8 @@ namespace Model.ArduinoServices;
 
 public class ArduinoCliService
 {
-    private static string ArduinoCliExe => Path.Combine(
-        AppContext.BaseDirectory, "arduino-cli.exe"
-    );
+    private readonly string _cliPath =
+    Path.Combine(AppContext.BaseDirectory, "Tools", "arduino-cli.exe");
 
     public void Compile(string projectPath, Action<string> logCallback)
     {
@@ -35,19 +34,19 @@ public class ArduinoCliService
 
     private void Run(string command, Action<string> logCallback, params string[] args)
     {
-        logCallback?.Invoke($"[CLI PATH] {ArduinoCliExe}");
-        logCallback?.Invoke($"[CLI EXISTS] {File.Exists(ArduinoCliExe)}");
+        logCallback?.Invoke($"[CLI PATH] {_cliPath}");
+        logCallback?.Invoke($"[CLI EXISTS] {File.Exists(_cliPath)}");
 
-        if (!File.Exists(ArduinoCliExe))
+        if (!File.Exists(_cliPath))
         {
             throw new FileNotFoundException(
-                $"arduino-cli.exe не найден по пути: {ArduinoCliExe}"
+                $"arduino-cli.exe не найден по пути: {_cliPath}"
             );
         }
 
         var psi = new ProcessStartInfo
         {
-            FileName = ArduinoCliExe,
+            FileName = _cliPath,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -88,7 +87,7 @@ public class ArduinoCliService
         catch (Exception ex)
         {
             throw new Exception(
-                $"Не удалось запустить arduino-cli.exe. Путь: {ArduinoCliExe}",
+                $"Не удалось запустить arduino-cli.exe. Путь: {_cliPath}",
                 ex
             );
         }
