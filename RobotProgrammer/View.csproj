@@ -6,21 +6,37 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+  <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+	<AssemblyName>RobotProgrammer</AssemblyName>
+      <RootNamespace>RobotProgrammer</RootNamespace>
+      <Product>Robot Programmer</Product>
+      <AssemblyTitle>Robot Programmer</AssemblyTitle>
+      <Description>Tetrix PRIZM programming tool</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="icon.png" />
   </ItemGroup>
-
+<ItemGroup>
+  <Resource Include="Resources\icon.ico" />
+</ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="System.IO.Ports" Version="10.0.7" />
+    <PackageReference Include="Velopack" Version="0.0.1298" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ViewModel\ViewModel.csproj" />
   </ItemGroup>
+<PropertyGroup>
+  <StartupObject>RobotProgrammer.App</StartupObject>
+</PropertyGroup>
 
+<ItemGroup>
+  <ApplicationDefinition Remove="App.xaml" />
+  <Page Include="App.xaml" />
+</ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\icon.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

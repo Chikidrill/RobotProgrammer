@@ -416,3 +416,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+
+artifacts/
+bin/
+obj/
+.vs/
+build-velopack-release.ps1
