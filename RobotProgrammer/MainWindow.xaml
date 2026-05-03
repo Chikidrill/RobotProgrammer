@@ -10,7 +10,7 @@
         MinHeight="600"
         MinWidth="950"
         Background="#F3F5F8"
-        Icon="/Resources/icon.png"
+        Icon="/Resources/icon.ico"
         FontFamily="Segoe UI"
         FontSize="13"
         UseLayoutRounding="True"
@@ -751,7 +751,9 @@
                                 <MenuItem Header="Компилировать" Style="{StaticResource AppMenuItemStyle}" Command="{Binding CompileCommand}" />
                                 <MenuItem Header="Загрузить" Style="{StaticResource AppMenuItemStyle}" Command="{Binding UploadCommand}" />
                                 <Separator/>
-                                <MenuItem Header="Обновить COM-порты" Style="{StaticResource AppMenuItemStyle}" Command="{Binding RefreshComPortsCommand}" />
+                                <MenuItem Header="Проверить обновления"
+                                      Style="{StaticResource AppMenuItemStyle}"
+                                      Command="{Binding CheckUpdatesCommand}" />
                             </MenuItem>
                         </Menu>
                     </Border>

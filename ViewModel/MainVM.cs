@@ -12,6 +12,8 @@ using System.Text.Json;
 using System.Windows.Input;
 using ViewModel;
 using System.IO.Ports;
+using Velopack;
+using Velopack.Sources;
 
 namespace RobotProgrammer.ViewModel;
 
@@ -115,6 +117,7 @@ public class MainVM : INotifyPropertyChanged
         AddIncludeCommand = new RelayCommand(AddInclude);
         DeleteIncludeCommand = new RelayCommand(DeleteInclude);
         RefreshComPortsCommand = new RelayCommand(RefreshComPorts);
+        CheckUpdatesCommand = new RelayCommand(CheckUpdates);
 
         RefreshComPorts();
         LoadAutonomousLibrary(logResult: true);
@@ -489,6 +492,8 @@ public class MainVM : INotifyPropertyChanged
     public ICommand AddIncludeCommand { get; }
     public ICommand DeleteIncludeCommand { get; }
     public ICommand RefreshComPortsCommand { get; }
+    public ICommand CheckUpdatesCommand { get; }
+
     #endregion
 
     #region Project file
@@ -1750,5 +1755,51 @@ public class MainVM : INotifyPropertyChanged
             AddLog($"Найдено COM-портов: {AvailableComPorts.Count}");
     }
 
+    #endregion
+
+    #region Velopack updates check
+    private async void CheckUpdates()
+    {
+        await CheckUpdatesAsync();
+    }
+
+    private async Task CheckUpdatesAsync()
+    {
+        try
+        {
+            AddLog("[Update] Проверяю обновления...");
+
+            var source = new GithubSource(
+                "https://github.com/Chikidrill/RobotProgrammer",
+                null,
+                false);
+
+            var manager = new UpdateManager(source);
+
+            var update = await manager.CheckForUpdatesAsync();
+
+            if (update == null)
+            {
+                AddLog("[Update] Обновлений нет.");
+                return;
+            }
+
+            AddLog($"[Update] Найдена версия: {update.TargetFullRelease.Version}");
+            AddLog("[Update] Скачиваю обновление...");
+
+            await manager.DownloadUpdatesAsync(update, progress =>
+            {
+                AddLog($"[Update] Загрузка: {progress}%");
+            });
+
+            AddLog("[Update] Обновление скачано. Приложение будет перезапущено.");
+
+            manager.ApplyUpdatesAndRestart(update);
+        }
+        catch (Exception ex)
+        {
+            AddLog("[Update Error] " + ex.Message);
+        }
+    }
     #endregion
 }

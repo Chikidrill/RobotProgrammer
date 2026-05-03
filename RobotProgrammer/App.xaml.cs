@@ -1,20 +1,26 @@
-﻿using System.Configuration;
-using System.Data;
+﻿using System;
 using System.Windows;
+using Velopack;
 
-namespace RobotProgrammer
+namespace RobotProgrammer;
+
+public partial class App : Application
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : Application
+    [STAThread]
+    public static void Main(string[] args)
     {
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            AppPaths.EnsureCreated();
+        VelopackApp.Build()
+            .Run();
 
-            base.OnStartup(e);
-        }
+        var app = new App();
+        app.InitializeComponent();
+        app.Run();
     }
 
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        AppPaths.EnsureCreated();
+
+        base.OnStartup(e);
+    }
 }
