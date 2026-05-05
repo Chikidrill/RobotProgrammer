@@ -1,5 +1,6 @@
 ﻿using Model.Services;
 using System.Collections.ObjectModel;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Model.RobotActions;
@@ -15,13 +16,26 @@ public class LoopAction : ContainerAction
 
     public override string GenerateCode()
     {
-        var code = $"{{\nfor(int i=0;i<{RepeatCount};i++){{\n";
+        var builder = new StringBuilder();
+
+        builder.AppendLine($"  for (int i = 0; i < {RepeatCount}; i++) {{");
 
         foreach (var child in Children)
-            code += child.GenerateCode();
+        {
+            var childCode = child.GenerateCode();
 
-        code += "}\n";
-        return code;
+            foreach (var line in childCode.Split(
+                         new[] { "\r\n", "\n" },
+                         StringSplitOptions.None))
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                    builder.AppendLine("  " + line);
+            }
+        }
+
+        builder.AppendLine("  }");
+
+        return builder.ToString();
     }
 
     public override ObservableCollection<ActionParameter> GetParameters()

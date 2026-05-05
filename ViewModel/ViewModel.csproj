@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="System.IO.Ports" Version="10.0.7" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
   </ItemGroup>

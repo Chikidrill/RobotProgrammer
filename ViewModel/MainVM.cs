@@ -14,6 +14,8 @@ using ViewModel;
 using System.IO.Ports;
 using Velopack;
 using Velopack.Sources;
+using ToolkitAsyncRelayCommand = CommunityToolkit.Mvvm.Input.AsyncRelayCommand;
+using ToolkitIAsyncRelayCommand = CommunityToolkit.Mvvm.Input.IAsyncRelayCommand;
 
 namespace RobotProgrammer.ViewModel;
 
@@ -50,6 +52,10 @@ public class MainVM : INotifyPropertyChanged
 
     private ProgramInclude? _selectedInclude;
     private string? _selectedComPort;
+
+    private bool _isBusy;
+    private string _busyText = "";
+
     #endregion
 
     #region Constructor
@@ -70,8 +76,8 @@ public class MainVM : INotifyPropertyChanged
 
         SaveAsProjectCommand = new RelayCommand(SaveAsProject);
         OpenProjectCommand = new RelayCommand(OpenProject);
-        CompileCommand = new RelayCommand(Compile);
-        UploadCommand = new RelayCommand(Upload);
+        CompileCommand = new ToolkitAsyncRelayCommand(CompileAsync, CanRunLongOperation);
+        UploadCommand = new ToolkitAsyncRelayCommand(UploadAsync, CanRunLongOperation);
 
         NewTemplateCommand = new RelayCommand(OpenNewTemplateWindow);
         LoadTemplateCommand = new RelayCommand(OpenTemplatePicker);
@@ -105,6 +111,7 @@ public class MainVM : INotifyPropertyChanged
         AddTemplateToTeleopAlwaysCommand = new RelayCommand(AddTemplateToTeleopAlways);
         AddTemplateToSelectedButtonRuleCommand = new RelayCommand(AddTemplateToSelectedButtonRule);
 
+        DeleteLibraryFunctionCommand = new RelayCommand(DeleteLibraryFunction);
         AddFunctionCallToCurrentContextCommand = new RelayCommand(AddFunctionCallToCurrentContext);
         AddTemplateToCurrentContextCommand = new RelayCommand(AddTemplateToCurrentContext);
         EditSelectedTemplateCommand = new RelayCommand(EditSelectedTemplate);
@@ -117,7 +124,7 @@ public class MainVM : INotifyPropertyChanged
         AddIncludeCommand = new RelayCommand(AddInclude);
         DeleteIncludeCommand = new RelayCommand(DeleteInclude);
         RefreshComPortsCommand = new RelayCommand(RefreshComPorts);
-        CheckUpdatesCommand = new RelayCommand(CheckUpdates);
+        CheckUpdatesCommand = new ToolkitAsyncRelayCommand(CheckUpdatesAsync, CanRunLongOperation);
 
         RefreshComPorts();
         LoadAutonomousLibrary(logResult: true);
@@ -446,8 +453,8 @@ public class MainVM : INotifyPropertyChanged
 
     public ICommand SaveAsProjectCommand { get; }
     public ICommand OpenProjectCommand { get; }
-    public ICommand CompileCommand { get; }
-    public ICommand UploadCommand { get; }
+    public ToolkitIAsyncRelayCommand CompileCommand { get; }
+    public ToolkitIAsyncRelayCommand UploadCommand { get; }
 
     public ICommand NewTemplateCommand { get; }
     public ICommand LoadTemplateCommand { get; }
@@ -492,7 +499,8 @@ public class MainVM : INotifyPropertyChanged
     public ICommand AddIncludeCommand { get; }
     public ICommand DeleteIncludeCommand { get; }
     public ICommand RefreshComPortsCommand { get; }
-    public ICommand CheckUpdatesCommand { get; }
+    public ToolkitIAsyncRelayCommand CheckUpdatesCommand { get; }
+    public ICommand DeleteLibraryFunctionCommand { get; }
 
     #endregion
 
@@ -596,66 +604,66 @@ public class MainVM : INotifyPropertyChanged
 
     #region Compile / upload
 
-    private void Compile()
+    private async Task CompileAsync()
+{
+    await RunBusyAsync("Компиляция...", async progress =>
     {
-        CompileSketch();
-    }
+        await GenerateAndCompileAsync(progress);
+    });
+}
 
-    private bool CompileSketch()
+    private async Task GenerateAndCompileAsync(IProgress<string> progress)
     {
+        Directory.CreateDirectory(DefaultProjectPath);
+
+        string code = _generator.GenerateCode(Program);
+
+        string filePath = Path.Combine(DefaultProjectPath, "robot.ino");
+
+        await File.WriteAllTextAsync(filePath, code);
+
+        progress.Report("Код сгенерирован");
+
         try
         {
-            Directory.CreateDirectory(DefaultProjectPath);
-
-            var code = GenerateSketchCode();
-            var sketchPath = Path.Combine(DefaultProjectPath, "robot.ino");
-
-            File.WriteAllText(sketchPath, code);
-
-            AddLog("Код сгенерирован");
-
-            try
+            await Task.Run(async () =>
             {
-                _cli.Compile(DefaultProjectPath, AddLog);
-                AddLog("Компиляция завершена");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                WriteCompileError(ex);
-                AddLog("[Ошибка компиляции] " + ex.Message);
-                return false;
-            }
+                await _cli.CompileAsync(DefaultProjectPath, progress);
+            });
+
+            progress.Report("Компиляция завершена");
         }
         catch (Exception ex)
         {
-            WriteCompileError(ex);
-            AddLog("[Ошибка] " + ex.Message);
-            return false;
+            progress.Report("[Ошибка компиляции] " + ex.Message);
+
+            await File.WriteAllTextAsync(
+                Path.Combine(DefaultProjectPath, "compile_errors.log"),
+                ex.ToString());
+
+            throw;
         }
     }
 
-    private void Upload()
+    private async Task UploadAsync()
     {
-        try
+        await RunBusyAsync("Загрузка...", async progress =>
         {
             if (string.IsNullOrWhiteSpace(SelectedComPort))
             {
-                AddLog("[Ошибка загрузки] Сначала выбери COM-порт.");
-                RefreshComPorts();
+                progress.Report("[Ошибка] COM-порт не выбран.");
                 return;
             }
 
-            if (!CompileSketch())
-                return;
+            await GenerateAndCompileAsync(progress);
 
-            _cli.Upload(DefaultProjectPath, SelectedComPort, AddLog);
-            AddLog($"Загрузка завершена на порт {SelectedComPort}");
-        }
-        catch (Exception ex)
-        {
-            AddLog("[Ошибка загрузки] " + ex.Message);
-        }
+            await Task.Run(async () =>
+            {
+                await _cli.UploadAsync(DefaultProjectPath, SelectedComPort, progress);
+            });
+
+            progress.Report("Загрузка завершена");
+        });
     }
 
     private static void WriteCompileError(Exception ex)
@@ -1396,6 +1404,7 @@ public class MainVM : INotifyPropertyChanged
 
     private void AddLog(string message)
     {
+      
         Log.Add(message);
         OnPropertyChanged(nameof(LogString));
     }
@@ -1802,4 +1811,90 @@ public class MainVM : INotifyPropertyChanged
         }
     }
     #endregion
+    public bool IsBusy
+    {
+        get => _isBusy;
+        private set
+        {
+            if (_isBusy == value)
+                return;
+
+            _isBusy = value;
+            OnPropertyChanged(nameof(IsBusy));
+
+            CompileCommand?.NotifyCanExecuteChanged();
+            UploadCommand?.NotifyCanExecuteChanged();
+            CheckUpdatesCommand?.NotifyCanExecuteChanged();
+        }
+    }
+
+    public string BusyText
+    {
+        get => _busyText;
+        private set
+        {
+            if (_busyText == value)
+                return;
+
+            _busyText = value;
+            OnPropertyChanged(nameof(BusyText));
+        }
+    }
+
+    private bool CanRunLongOperation()
+    {
+        return !IsBusy;
+    }
+    private async Task RunBusyAsync(
+    string busyText,
+    Func<IProgress<string>, Task> operation)
+    {
+        if (IsBusy)
+            return;
+
+        var progress = new Progress<string>(AddLog);
+
+        try
+        {
+            IsBusy = true;
+            BusyText = busyText;
+
+            await Task.Yield();
+
+            await operation(progress);
+        }
+        catch (Exception ex)
+        {
+            AddLog("[Ошибка] " + ex.Message);
+        }
+        finally
+        {
+            BusyText = "";
+            IsBusy = false;
+        }
+    }
+
+    private void DeleteLibraryFunction()
+    {
+        if (SelectedLibraryFunction == null)
+        {
+            AddLog("Сначала выбери функцию из библиотеки.");
+            return;
+        }
+
+        var functionName = SelectedLibraryFunction.Name;
+
+        var deleted = FunctionLibraryService.Delete(SelectedLibraryFunction);
+
+        if (!deleted)
+        {
+            AddLog($"Функция не найдена в библиотеке: {functionName}");
+            return;
+        }
+
+        SelectedLibraryFunction = null;
+        LoadFunctionLibrary();
+
+        AddLog($"Функция удалена из библиотеки: {functionName}");
+    }
 }
