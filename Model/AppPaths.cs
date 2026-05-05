@@ -39,6 +39,18 @@ public static class AppPaths
             AppName,
             "Projects");
 
+    public static string Libraries =>
+    Path.Combine(RoamingAppData, "libraries");
+
+    public static string FunctionLibrary =>
+        Path.Combine(Libraries, "functions");
+
+    public static string TemplateLibrary =>
+        Path.Combine(Libraries, "templates");
+
+    public static string AutonomousLibrary =>
+        Path.Combine(Libraries, "autonomous");
+
     public static void EnsureCreated()
     {
         Directory.CreateDirectory(RoamingAppData);
@@ -47,6 +59,10 @@ public static class AppPaths
         Directory.CreateDirectory(Temp);
         Directory.CreateDirectory(Backups);
         Directory.CreateDirectory(DefaultProjectsFolder);
+        Directory.CreateDirectory(Libraries);
+        Directory.CreateDirectory(FunctionLibrary);
+        Directory.CreateDirectory(TemplateLibrary);
+        Directory.CreateDirectory(AutonomousLibrary);
     }
 
 

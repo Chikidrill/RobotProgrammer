@@ -1,67 +1,119 @@
-﻿using System.Text.Json;
+﻿using Model;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
 
 namespace Model.Services;
 
 public static class FunctionLibraryService
 {
-    private static readonly string LibraryFolder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RobotProgrammer",
-        "Functions");
+    private const string Extension = ".json";
 
-    static FunctionLibraryService()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        Directory.CreateDirectory(LibraryFolder);
-    }
+        WriteIndented = true
+    };
 
     public static List<ProgramFunction> LoadAll()
     {
+        AppPaths.EnsureCreated();
+
         var result = new List<ProgramFunction>();
 
-        foreach (var file in Directory.GetFiles(LibraryFolder, "*.rfunc"))
+        foreach (var file in Directory.GetFiles(AppPaths.FunctionLibrary, "*" + Extension))
         {
             try
             {
                 var json = File.ReadAllText(file);
-                var function = JsonSerializer.Deserialize<ProgramFunction>(json);
+                var function = JsonSerializer.Deserialize<ProgramFunction>(json, JsonOptions);
 
                 if (function != null)
                     result.Add(function);
             }
             catch
             {
-                // битый файл библиотеки просто пропускаем
+                // Битый файл библиотеки не должен ломать запуск приложения.
             }
         }
 
-        return result;
+        return result
+            .OrderBy(function => function.Name)
+            .ToList();
     }
 
     public static void Save(ProgramFunction function)
     {
-        Directory.CreateDirectory(LibraryFolder);
+        if (function == null)
+            throw new ArgumentNullException(nameof(function));
 
-        string safeName = MakeSafeFileName(function.Name);
-        string path = Path.Combine(LibraryFolder, safeName + ".rfunc");
+        AppPaths.EnsureCreated();
 
-        string json = JsonSerializer.Serialize(
-            function,
-            new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
+        var path = GetFunctionPath(function);
+        var json = JsonSerializer.Serialize(function, JsonOptions);
 
         File.WriteAllText(path, json);
     }
 
-    private static string MakeSafeFileName(string name)
+    public static bool Delete(ProgramFunction function)
     {
-        if (string.IsNullOrWhiteSpace(name))
+        if (function == null)
+            return false;
+
+        AppPaths.EnsureCreated();
+
+        var path = GetFunctionPath(function);
+
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+            return true;
+        }
+
+        var safeName = ToSafeFileName(
+            string.IsNullOrWhiteSpace(function.SafeName)
+                ? function.Name
+                : function.SafeName);
+
+        var candidates = Directory
+            .GetFiles(AppPaths.FunctionLibrary, "*" + Extension)
+            .Where(file =>
+                string.Equals(
+                    Path.GetFileNameWithoutExtension(file),
+                    safeName,
+                    StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var candidate in candidates)
+            File.Delete(candidate);
+
+        return candidates.Count > 0;
+    }
+
+    private static string GetFunctionPath(ProgramFunction function)
+    {
+        var fileName = ToSafeFileName(
+            string.IsNullOrWhiteSpace(function.SafeName)
+                ? function.Name
+                : function.SafeName);
+
+        return Path.Combine(AppPaths.FunctionLibrary, fileName + Extension);
+    }
+
+    private static string ToSafeFileName(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
             return "function";
 
-        foreach (var c in Path.GetInvalidFileNameChars())
-            name = name.Replace(c, '_');
+        var invalidChars = Path.GetInvalidFileNameChars();
 
-        return name;
+        var safe = new string(value
+            .Select(ch => invalidChars.Contains(ch) ? '_' : ch)
+            .ToArray());
+
+        return string.IsNullOrWhiteSpace(safe)
+            ? "function"
+            : safe;
     }
 }

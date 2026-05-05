@@ -960,8 +960,8 @@
                                     </ListBox>
 
                                     <WrapPanel Grid.Row="2" Margin="0,8,0,0">
-                                        <Button Content="Добавить" Width="95" Command="{Binding AddFunctionCommand}"/>
-                                        <Button Content="Удалить" Width="95" Command="{Binding DeleteFunctionCommand}"/>
+                                        <Button Content="Добавить" Width="95" Command="{Binding AddFunctionCommand}" Margin="0,0,8,0"/>
+                                        <Button Content="Удалить" Width="95" Command="{Binding DeleteFunctionCommand}" Margin="0,0,8,0"/>
 
                                         <Border Width="135" Style="{StaticResource InlineMenuButtonBorderStyle}">
                                             <Menu Style="{StaticResource InlineMenuStyle}">
@@ -1009,15 +1009,18 @@
                                                     <MenuItem Header="Teleop Always" Style="{StaticResource AppMenuItemStyle}" Command="{Binding AddFunctionCallToTeleopAlwaysCommand}"/>
                                                     <MenuItem Header="Выбранную кнопку" Style="{StaticResource AppMenuItemStyle}" Command="{Binding AddFunctionCallToSelectedButtonRuleCommand}"/>
                                                 </MenuItem>
+
+                                                <Separator/>
+                                                <MenuItem Header="Удалить из библиотеки" Style="{StaticResource AppMenuItemStyle}" Command="{Binding DeleteLibraryFunctionCommand}"/>
                                             </ContextMenu>
                                         </ListBox.ContextMenu>
                                     </ListBox>
 
                                     <WrapPanel Grid.Row="2" Margin="0,10,0,0">
-                                        <Button Content="В проект" Width="160" Command="{Binding ImportFunctionFromLibraryCommand}"/>
-
+                                        <Button Content="В проект" Width="120" Margin="0,0,10,0" Command="{Binding ImportFunctionFromLibraryCommand}"/>
+                                        <Button Content="Удалить" Width="95" Margin="0,0,10,0" Command="{Binding DeleteLibraryFunctionCommand}"/>
                                         <Border Style="{StaticResource InlineMenuButtonBorderStyle}"
-                                                        Margin="10,0,0,0">
+                                                        Margin="0,0,0,0">
                                             <Menu Style="{StaticResource InlineMenuStyle}">
                                                 <MenuItem Header="В проект и вызвать в..."
                                                         Style="{StaticResource InlineMenuButtonItemStyle}">
